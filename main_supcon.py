@@ -7,6 +7,7 @@ import time
 import math
 
 import tensorboard_logger as tb_logger
+from torch.utils.tensorboard import SummaryWriter
 import torch
 import torch.backends.cudnn as cudnn
 from torchvision import transforms, datasets
@@ -272,7 +273,8 @@ def main():
     optimizer = set_optimizer(opt, model)
 
     # tensorboard
-    logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
+    # logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
+    logger = SummaryWriter(log_dir=opt.tb_folder)
 
     # training routine
     for epoch in range(1, opt.epochs + 1):
@@ -285,8 +287,10 @@ def main():
         print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
 
         # tensorboard logger
-        logger.log_value('loss', loss, epoch)
-        logger.log_value('learning_rate', optimizer.param_groups[0]['lr'], epoch)
+        # logger.log_value('loss', loss, epoch)
+        # logger.log_value('learning_rate', optimizer.param_groups[0]['lr'], epoch)
+        logger.add_scalar('loss', loss, epoch)
+        logger.add_scalar('learning_rate', optimizer.param_groups[0]['lr'], epoch)
 
         if epoch % opt.save_freq == 0:
             save_file = os.path.join(
