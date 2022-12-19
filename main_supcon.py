@@ -16,6 +16,7 @@ from util import adjust_learning_rate, warmup_learning_rate
 from util import set_optimizer, save_model
 from networks.resnet_big import SupConResNet
 from losses import SupConLoss
+from dommainnet_dataset import DomainNetDataset
 
 try:
     import apex
@@ -33,7 +34,7 @@ def parse_option():
                         help='save frequency')
     parser.add_argument('--batch_size', type=int, default=256,
                         help='batch_size')
-    parser.add_argument('--num_workers', type=int, default=16,
+    parser.add_argument('--num_workers', type=int, default=2,
                         help='num of workers to use')
     parser.add_argument('--epochs', type=int, default=1000,
                         help='number of training epochs')
@@ -52,8 +53,8 @@ def parse_option():
 
     # model dataset
     parser.add_argument('--model', type=str, default='resnet50')
-    parser.add_argument('--dataset', type=str, default='cifar10',
-                        choices=['cifar10', 'cifar100', 'path'], help='dataset')
+    parser.add_argument('--dataset', type=str, default='domainnet',
+                        choices=['cifar10', 'cifar100', 'path', 'domainnet'], help='dataset')
     parser.add_argument('--mean', type=str, help='mean of dataset in path in form of str tuple')
     parser.add_argument('--std', type=str, help='std of dataset in path in form of str tuple')
     parser.add_argument('--data_folder', type=str, default=None, help='path to custom dataset')
@@ -82,8 +83,8 @@ def parse_option():
     # check if dataset is path that passed required arguments
     if opt.dataset == 'path':
         assert opt.data_folder is not None \
-            and opt.mean is not None \
-            and opt.std is not None
+               and opt.mean is not None \
+               and opt.std is not None
 
     # set the path according to the environment
     if opt.data_folder is None:
@@ -96,7 +97,7 @@ def parse_option():
     for it in iterations:
         opt.lr_decay_epochs.append(int(it))
 
-    opt.model_name = '{}_{}_{}_lr_{}_decay_{}_bsz_{}_temp_{}_trial_{}'.\
+    opt.model_name = '{}_{}_{}_lr_{}_decay_{}_bsz_{}_temp_{}_trial_{}'. \
         format(opt.method, opt.dataset, opt.model, opt.learning_rate,
                opt.weight_decay, opt.batch_size, opt.temp, opt.trial)
 
@@ -139,6 +140,9 @@ def set_loader(opt):
     elif opt.dataset == 'path':
         mean = eval(opt.mean)
         std = eval(opt.std)
+    elif opt.dataset == 'domainnet':
+        mean = (0, 0, 0)
+        std = (1, 1, 1)
     else:
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
     normalize = transforms.Normalize(mean=mean, std=std)
@@ -165,6 +169,9 @@ def set_loader(opt):
     elif opt.dataset == 'path':
         train_dataset = datasets.ImageFolder(root=opt.data_folder,
                                             transform=TwoCropTransform(train_transform))
+    elif opt.dataset == 'domainnet':
+        train_dataset = DomainNetDataset(annotations_file="DomainNet/train_combined.txt", img_dir="DomainNet/combined/",
+                                         transform=TwoCropTransform(train_transform))
     else:
         raise ValueError(opt.dataset)
 
@@ -245,8 +252,8 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
                   'BT {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'DT {data_time.val:.3f} ({data_time.avg:.3f})\t'
                   'loss {loss.val:.3f} ({loss.avg:.3f})'.format(
-                   epoch, idx + 1, len(train_loader), batch_time=batch_time,
-                   data_time=data_time, loss=losses))
+                epoch, idx + 1, len(train_loader), batch_time=batch_time,
+                data_time=data_time, loss=losses))
             sys.stdout.flush()
 
     return losses.avg
