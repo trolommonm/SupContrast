@@ -6,7 +6,7 @@ import argparse
 import time
 import math
 
-import tensorboard_logger as tb_logger
+# import tensorboard_logger as tb_logger
 from torch.utils.tensorboard import SummaryWriter
 import torch
 import torch.backends.cudnn as cudnn
