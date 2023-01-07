@@ -142,8 +142,9 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, opt):
     for idx, (images, labels) in enumerate(train_loader):
         data_time.update(time.time() - end)
 
-        images = images.cuda(non_blocking=True)
-        labels = labels.cuda(non_blocking=True)
+        if torch.cuda.is_available():
+            images = images.cuda(non_blocking=True)
+            labels = labels.cuda(non_blocking=True)
         bsz = labels.shape[0]
 
         # warm-up learning rate
