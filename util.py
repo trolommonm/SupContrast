@@ -15,6 +15,17 @@ class TwoCropTransform:
         return [self.transform(x), self.transform(x)]
 
 
+class NoneTransform(object):
+    """ Does nothing to the image, to be used instead of None
+
+    Args:
+        image in, image out, nothing is done
+    """
+
+    def __call__(self, image):
+        return image
+
+
 class AverageMeter(object):
     """Computes and stores the average and current value"""
     def __init__(self):
