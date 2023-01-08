@@ -16,7 +16,7 @@ class TwoCropTransform:
 
 
 class NoneTransform(object):
-    """ Does nothing to the image, to be used instead of None
+    """Does nothing to the image, to be used instead of None
 
     Args:
         image in, image out, nothing is done

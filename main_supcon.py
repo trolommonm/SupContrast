@@ -12,7 +12,7 @@ import torch
 import torch.backends.cudnn as cudnn
 from torchvision import transforms, datasets
 
-from util import TwoCropTransform, AverageMeter, NoneTransform
+from util import TwoCropTransform, AverageMeter, ScaleTransform
 from util import adjust_learning_rate, warmup_learning_rate
 from util import set_optimizer, save_model
 from networks.resnet_big import SupConResNet
@@ -155,8 +155,8 @@ def set_loader(opt):
             transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)
         ], p=0.8),
         transforms.RandomGrayscale(p=0.2),
-        # NoneTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
-        transforms.ToTensor(),
+        ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
+        # transforms.ToTensor(),
         normalize,
     ])
 
