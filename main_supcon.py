@@ -195,6 +195,7 @@ def set_model(opt):
 
     if torch.cuda.is_available():
         if torch.cuda.device_count() > 1:
+            print(f"Using Data Parallel model, detected {torch.cuda.device_count()} GPUs.")
             model.encoder = torch.nn.DataParallel(model.encoder)
         model = model.cuda()
         criterion = criterion.cuda()
