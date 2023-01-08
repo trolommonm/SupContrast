@@ -26,6 +26,12 @@ class NoneTransform(object):
         return image
 
 
+class ScaleTransform(object):
+
+    def __call__(self, image):
+        return image / 255
+
+
 class AverageMeter(object):
     """Computes and stores the average and current value"""
     def __init__(self):
