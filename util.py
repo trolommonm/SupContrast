@@ -27,6 +27,7 @@ class NoneTransform(object):
 
 
 class ScaleTransform(object):
+    """Scales the pixel values to between 0 and 1"""
 
     def __call__(self, image):
         return image / 255
