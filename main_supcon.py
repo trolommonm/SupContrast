@@ -12,6 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 import torch
 import torch.backends.cudnn as cudnn
 from torchvision import transforms, datasets
+from torch.cuda.amp import GradScaler, autocast
 
 from util import TwoCropTransform, AverageMeter
 from data_aug import ScaleTransform, GaussianBlur
@@ -84,6 +85,8 @@ def parse_option():
                         help='using synchronized batch normalization')
     parser.add_argument('--warm', action='store_true',
                         help='warm-up for large batch training')
+    parser.add_argument('--amp', action='store_true',
+                        help='enable automatic mixed precision training')
     parser.add_argument('--trial', type=str, default='0',
                         help='id for recording multiple runs')
 
@@ -255,6 +258,7 @@ def set_model(opt):
 def train(train_loader, model, criterion, optimizer, epoch, opt):
     """one epoch training"""
     model.train()
+    scalar = torch.cuda.amp.GradScaler(enabled=opt.amp)
 
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -274,24 +278,26 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
         warmup_learning_rate(opt, epoch, idx, len(train_loader), optimizer)
 
         # compute loss
-        features = model(images)
-        f1, f2 = torch.split(features, [bsz, bsz], dim=0)
-        features = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim=1)
-        if opt.method == 'SupCon':
-            loss = criterion(features, labels)
-        elif opt.method == 'SimCLR':
-            loss = criterion(features)
-        else:
-            raise ValueError('contrastive method not supported: {}'.
-                             format(opt.method))
+        with autocast(enabled=opt.amp):
+            features = model(images)
+            f1, f2 = torch.split(features, [bsz, bsz], dim=0)
+            features = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim=1)
+            if opt.method == 'SupCon':
+                loss = criterion(features, labels)
+            elif opt.method == 'SimCLR':
+                loss = criterion(features)
+            else:
+                raise ValueError('contrastive method not supported: {}'.
+                                 format(opt.method))
 
         # update metric
         losses.update(loss.item(), bsz)
 
         # SGD
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        scalar.scale(loss).backward()
+        scalar.step(optimizer)
+        scalar.update()
 
         # measure elapsed time
         batch_time.update(time.time() - end)
