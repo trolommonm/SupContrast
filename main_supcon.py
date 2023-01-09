@@ -140,7 +140,7 @@ def parse_option():
         os.makedirs(opt.save_folder)
 
     # save arguments used
-    with open(os.path.join(opt.model_path, 'args.json', 'w')) as f:
+    with open(os.path.join(opt.model_path, 'args.json'), 'w') as f:
         json.dump(opt.__dict__, f, indent=2)
 
     return opt
