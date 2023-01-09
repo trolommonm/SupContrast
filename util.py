@@ -83,7 +83,7 @@ def set_optimizer(opt, model):
     return optimizer
 
 
-def save_model(model, optimizer, opt, epoch, save_file):
+def save_model(model, optimizer, opt, epoch, save_file, scalar=None):
     print('==> Saving...')
     state = {
         'opt': opt,
@@ -91,5 +91,9 @@ def save_model(model, optimizer, opt, epoch, save_file):
         'optimizer': optimizer.state_dict(),
         'epoch': epoch,
     }
+
+    if scalar:
+        state['scalar'] = scalar.state_dict()
+
     torch.save(state, save_file)
     del state
