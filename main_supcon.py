@@ -5,6 +5,7 @@ import sys
 import argparse
 import time
 import math
+import json
 
 # import tensorboard_logger as tb_logger
 from torch.utils.tensorboard import SummaryWriter
@@ -137,6 +138,10 @@ def parse_option():
     opt.save_folder = os.path.join(opt.model_path, opt.model_name)
     if not os.path.isdir(opt.save_folder):
         os.makedirs(opt.save_folder)
+
+    # save arguments used
+    with open(os.path.join(opt.model_path, 'args.json', 'w')) as f:
+        json.dump(opt.__dict__, f, indent=2)
 
     return opt
 
