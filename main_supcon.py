@@ -143,7 +143,7 @@ def parse_option():
         os.makedirs(opt.save_folder)
 
     # save arguments used
-    with open(os.path.join(opt.model_path, 'args.json'), 'w') as f:
+    with open(os.path.join(opt.save_folder, 'args.json'), 'w') as f:
         json.dump(opt.__dict__, f, indent=2)
 
     return opt
@@ -255,10 +255,9 @@ def set_model(opt):
     return model, criterion
 
 
-def train(train_loader, model, criterion, optimizer, epoch, opt):
+def train(train_loader, model, criterion, optimizer, epoch, opt, scalar):
     """one epoch training"""
     model.train()
-    scalar = torch.cuda.amp.GradScaler(enabled=opt.amp)
 
     batch_time = AverageMeter()
     data_time = AverageMeter()
@@ -332,6 +331,9 @@ def main():
     # build optimizer
     optimizer = set_optimizer(opt, model)
 
+    # GradScalar for amp
+    scalar = GradScaler(enabled=opt.amp)
+
     # tensorboard
     # logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
     logger = SummaryWriter(log_dir=opt.tb_folder)
@@ -342,7 +344,7 @@ def main():
 
         # train for one epoch
         time1 = time.time()
-        loss = train(train_loader, model, criterion, optimizer, epoch, opt)
+        loss = train(train_loader, model, criterion, optimizer, epoch, opt, scalar)
         time2 = time.time()
         print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
 
