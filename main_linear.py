@@ -108,6 +108,7 @@ def parse_option():
     if opt.augmentation == 'autoaugment':
         assert opt.autoaugment_policy is not None, \
             "Please specific the AutoAugment policy to be used for AutoAugment!"
+    opt.size=32
 
     return opt
 
