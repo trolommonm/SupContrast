@@ -7,8 +7,10 @@ import math
 
 import torch
 import torch.backends.cudnn as cudnn
+from torch.cuda.amp import GradScaler, autocast
 
-from main_ce import set_loader
+# from main_ce import set_loader
+from main_supcon import set_loader
 from util import AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate, accuracy
 from util import set_optimizer
@@ -51,6 +53,12 @@ def parse_option():
     parser.add_argument('--model', type=str, default='resnet50')
     parser.add_argument('--dataset', type=str, default='cifar10',
                         choices=['cifar10', 'cifar100'], help='dataset')
+
+    # augmentation
+    parser.add_argument('--augmentation', type=str, default='simaugment',
+                        choices=['autoaugment', 'randaugment', 'simaugment'], help='choose augmentation')
+    parser.add_argument('--autoaugment_policy', required=False,
+                        choices=['IMAGENET', 'CIFAR10', 'SVHN'])
 
     # other setting
     parser.add_argument('--cosine', action='store_true',
@@ -96,6 +104,10 @@ def parse_option():
         opt.n_cls = 100
     else:
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
+
+    if opt.augmentation == 'autoaugment':
+        assert opt.autoaugment_policy is not None, \
+            "Please specific the AutoAugment policy to be used for AutoAugment!"
 
     return opt
 
