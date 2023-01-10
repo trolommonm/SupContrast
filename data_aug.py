@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from torch import nn
 from torchvision.transforms import transforms
+import PIL
 
 
 class NoneTransform(object):
@@ -24,6 +25,7 @@ class ScaleTransform(object):
 
 class GaussianBlur(object):
     """blur a single image on CPU"""
+
     def __init__(self, kernel_size):
         radias = kernel_size // 2
         kernel_size = radias * 2 + 1
@@ -44,8 +46,12 @@ class GaussianBlur(object):
         self.tensor_to_pil = transforms.ToPILImage()
 
     def __call__(self, img):
-        # img = self.pil_to_tensor(img).unsqueeze(0)
-        img = img.unsqueeze(0)
+        isPIL = isinstance(img, PIL.Image.Image)
+
+        if isPIL:
+            img = self.pil_to_tensor(img).unsqueeze(0)
+        else:
+            img = img.unsqueeze(0)
         img = img.float()
 
         sigma = np.random.uniform(0.1, 2.0)
@@ -61,6 +67,7 @@ class GaussianBlur(object):
             img = self.blur(img)
             img = img.squeeze()
 
-        # img = self.tensor_to_pil(img)
+        if isPIL:
+            img = self.tensor_to_pil(img)
 
         return img

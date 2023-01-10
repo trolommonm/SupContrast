@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import json
+import os
 import sys
 import argparse
 import time
@@ -9,12 +11,13 @@ import torch
 import torch.backends.cudnn as cudnn
 from torch.cuda.amp import GradScaler, autocast
 from torchvision import transforms, datasets
+from torch.utils.tensorboard import SummaryWriter
 
 from data_aug import GaussianBlur, ScaleTransform
 # from main_ce import set_loader
 from util import AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate, accuracy
-from util import set_optimizer
+from util import set_optimizer, save_model
 from networks.resnet_big import SupConResNet, LinearClassifier
 
 try:
@@ -66,23 +69,28 @@ def parse_option():
                         help='using cosine annealing')
     parser.add_argument('--warm', action='store_true',
                         help='warm-up for large batch training')
-
     parser.add_argument('--ckpt', type=str, default='',
                         help='path to pre-trained model')
+    parser.add_argument('--amp', action='store_true',
+                        help='enable automatic mixed precision training')
+    parser.add_argument('--trial', type=str, default='0',
+                        help='id for recording multiple runs')
 
     opt = parser.parse_args()
 
     # set the path according to the environment
     opt.data_folder = './datasets/'
+    opt.model_path = './save/LinearEval/{}_models'.format(opt.dataset)
+    opt.tb_path = './save/LinearEval/{}_tensorboard'.format(opt.dataset)
 
     iterations = opt.lr_decay_epochs.split(',')
     opt.lr_decay_epochs = list([])
     for it in iterations:
         opt.lr_decay_epochs.append(int(it))
 
-    opt.model_name = '{}_{}_lr_{}_decay_{}_bsz_{}'.\
+    opt.model_name = '{}_{}_lr_{}_decay_{}_bsz_{}_trial_{}'. \
         format(opt.dataset, opt.model, opt.learning_rate, opt.weight_decay,
-               opt.batch_size)
+               opt.batch_size, opt.trial)
 
     if opt.cosine:
         opt.model_name = '{}_cosine'.format(opt.model_name)
@@ -109,6 +117,18 @@ def parse_option():
     if opt.augmentation == 'autoaugment':
         assert opt.autoaugment_policy is not None, \
             "Please specific the AutoAugment policy to be used for AutoAugment!"
+
+    opt.tb_folder = os.path.join(opt.tb_path, opt.model_name)
+    if not os.path.isdir(opt.tb_folder):
+        os.makedirs(opt.tb_folder)
+
+    opt.save_folder = os.path.join(opt.model_path, opt.model_name)
+    if not os.path.isdir(opt.save_folder):
+        os.makedirs(opt.save_folder)
+
+    # save arguments used
+    with open(os.path.join(opt.save_folder, 'args.json'), 'w') as f:
+        json.dump(opt.__dict__, f, indent=2)
 
     return opt
 
@@ -160,7 +180,7 @@ def set_loader(opt):
             transforms.Resize(size=(opt.size, opt.size)),
             transforms.AutoAugment(transforms.AutoAugmentPolicy[opt.autoaugment_policy]),
             ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
-            normalize
+            # normalize
         ])
     elif opt.augmentation == 'randaugment':
         # RandAugment
@@ -168,7 +188,7 @@ def set_loader(opt):
             transforms.Resize(size=(opt.size, opt.size)),
             transforms.RandAugment(),
             ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
-            normalize
+            # normalize
         ])
     elif opt.augmentation == 'simaugment':
         # SimAugment
@@ -181,7 +201,7 @@ def set_loader(opt):
             transforms.RandomGrayscale(p=0.2),
             GaussianBlur(kernel_size=int(0.1 * opt.size)),
             ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
-            normalize
+            # normalize
         ])
     else:
         raise ValueError('This should not happen; check the augmentation argument!')
@@ -195,7 +215,7 @@ def set_loader(opt):
 
     val_transform = transforms.Compose([
         transforms.ToTensor(),
-        normalize,
+        # normalize,
     ])
 
     if opt.dataset == 'cifar10':
@@ -226,7 +246,7 @@ def set_loader(opt):
     return train_loader, val_loader
 
 
-def train(train_loader, model, classifier, criterion, optimizer, epoch, opt):
+def train(train_loader, model, classifier, criterion, optimizer, epoch, opt, scalar):
     """one epoch training"""
     model.eval()
     classifier.train()
@@ -249,10 +269,12 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, opt):
         warmup_learning_rate(opt, epoch, idx, len(train_loader), optimizer)
 
         # compute loss
-        with torch.no_grad():
-            features = model.encoder(images)
-        output = classifier(features.detach())
-        loss = criterion(output, labels)
+        with autocast(enabled=opt.amp):
+            with torch.no_grad():
+                features = model.encoder(images)
+        with autocast(enabled=opt.amp):
+            output = classifier(features.detach())
+            loss = criterion(output, labels)
 
         # update metric
         losses.update(loss.item(), bsz)
@@ -261,8 +283,9 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, opt):
 
         # SGD
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        scalar.scale(loss).backward()
+        scalar.step(optimizer)
+        scalar.update()
 
         # measure elapsed time
         batch_time.update(time.time() - end)
@@ -275,8 +298,8 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, opt):
                   'DT {data_time.val:.3f} ({data_time.avg:.3f})\t'
                   'loss {loss.val:.3f} ({loss.avg:.3f})\t'
                   'Acc@1 {top1.val:.3f} ({top1.avg:.3f})'.format(
-                   epoch, idx + 1, len(train_loader), batch_time=batch_time,
-                   data_time=data_time, loss=losses, top1=top1))
+                epoch, idx + 1, len(train_loader), batch_time=batch_time,
+                data_time=data_time, loss=losses, top1=top1))
             sys.stdout.flush()
 
     return losses.avg, top1.avg
@@ -316,8 +339,8 @@ def validate(val_loader, model, classifier, criterion, opt):
                       'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                       'Loss {loss.val:.4f} ({loss.avg:.4f})\t'
                       'Acc@1 {top1.val:.3f} ({top1.avg:.3f})'.format(
-                       idx, len(val_loader), batch_time=batch_time,
-                       loss=losses, top1=top1))
+                    idx, len(val_loader), batch_time=batch_time,
+                    loss=losses, top1=top1))
 
     print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
     return losses.avg, top1.avg
@@ -332,9 +355,22 @@ def main():
 
     # build model and criterion
     model, classifier, criterion = set_model(opt)
+    print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    print("Model Summary")
+    print(model)
+    print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    print("Classifier Summary")
+    print(classifier)
+    print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
     # build optimizer
     optimizer = set_optimizer(opt, classifier)
+
+    # GradScalar for amp
+    scalar = GradScaler(enabled=opt.amp)
+
+    # tensorboard
+    logger = SummaryWriter(log_dir=opt.tb_folder)
 
     # training routine
     for epoch in range(1, opt.epochs + 1):
@@ -342,16 +378,28 @@ def main():
 
         # train for one epoch
         time1 = time.time()
-        loss, acc = train(train_loader, model, classifier, criterion,
-                          optimizer, epoch, opt)
+        train_loss, train_acc = train(train_loader, model, classifier, criterion,
+                                      optimizer, epoch, opt, scalar)
         time2 = time.time()
         print('Train epoch {}, total time {:.2f}, accuracy:{:.2f}'.format(
-            epoch, time2 - time1, acc))
+            epoch, time2 - time1, train_acc))
 
         # eval for one epoch
-        loss, val_acc = validate(val_loader, model, classifier, criterion, opt)
+        val_loss, val_acc = validate(val_loader, model, classifier, criterion, opt)
         if val_acc > best_acc:
             best_acc = val_acc
+            save_file = os.path.join(opt.save_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=epoch))
+            save_model(model, optimizer, opt, epoch, save_file, scalar)
+
+        # tensorboard logger
+        logger.add_scalar('train_loss', train_loss, epoch)
+        logger.add_scalar('train_accuracy', train_acc, epoch)
+        logger.add_scalar('val_loss', val_loss, epoch)
+        logger.add_scalar('val_accuracy', val_acc, epoch)
+        logger.add_scalar('learning_rate', optimizer.param_groups[0]['lr'], epoch)
+
+    save_file = os.path.join(opt.save_folder, 'last.pth')
+    save_model(model, optimizer, opt, epoch, save_file, scalar)
 
     print('best accuracy: {:.2f}'.format(best_acc))
 
