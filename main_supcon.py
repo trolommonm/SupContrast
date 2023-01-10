@@ -323,10 +323,10 @@ def main():
 
     # build model and criterion
     model, criterion = set_model(opt)
-    print("++++++++++++++++++++++++++")
+    print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
     print("Model Summary")
     print(model)
-    print("++++++++++++++++++++++++++")
+    print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
     # build optimizer
     optimizer = set_optimizer(opt, model)
