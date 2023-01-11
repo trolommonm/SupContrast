@@ -388,7 +388,7 @@ def main():
         val_loss, val_acc = validate(val_loader, model, classifier, criterion, opt)
         if val_acc > best_acc:
             best_acc = val_acc
-            save_file = os.path.join(opt.save_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=epoch))
+            save_file = os.path.join(opt.save_folder, 'best.pth'.format(epoch=epoch))
             save_model(model, optimizer, opt, epoch, save_file, scalar)
 
         # tensorboard logger
