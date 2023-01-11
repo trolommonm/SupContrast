@@ -117,8 +117,9 @@ def parse_option():
         opt.model_name = '{}_cosine'.format(opt.model_name)
 
     # warm-up for large-batch training,
-    if opt.batch_size > 256:
-        opt.warm = True
+    # if opt.batch_size > 256:
+    #     opt.warm = True
+
     if opt.warm:
         opt.model_name = '{}_warm'.format(opt.model_name)
         opt.warmup_from = 0.01
