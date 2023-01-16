@@ -147,12 +147,12 @@ def set_loader(opt):
     train_transform = transforms.Compose([
         transforms.RandomResizedCrop(size=32, scale=(0.2, 1.)),
         transforms.RandomHorizontalFlip(),
-        ScaleTransform if opt.dataset == 'domainnet' else transforms.ToTensor(),
+        ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
         normalize,
     ])
 
     val_transform = transforms.Compose([
-        ScaleTransform if opt.dataset == 'domainnet' else transforms.ToTensor(),
+        ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
         normalize,
     ])
 
