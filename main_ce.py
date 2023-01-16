@@ -5,6 +5,7 @@ import sys
 import argparse
 import time
 import math
+import json
 
 # import tensorboard_logger as tb_logger
 from torch.utils.tensorboard import SummaryWriter
@@ -119,6 +120,10 @@ def parse_option():
         opt.n_cls = 345
     else:
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
+
+    # save arguments used
+    with open(os.path.join(opt.save_folder, 'args.json'), 'w') as f:
+        json.dump(opt.__dict__, f, indent=2)
 
     return opt
 
