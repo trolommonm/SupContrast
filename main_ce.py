@@ -172,6 +172,8 @@ def set_loader(opt):
     elif opt.dataset == 'domainnet':
         train_dataset = DomainNetDataset(annotations_file="DomainNet/train_combined.txt", img_dir="DomainNet/combined/",
                                          transform=TwoCropTransform(train_transform))
+        val_dataset = DomainNetDataset(annotations_file="DomainNet/test_combined.txt", img_dir="DomainNet/combined/",
+                                       transform=val_transform)
     else:
         raise ValueError(opt.dataset)
 
