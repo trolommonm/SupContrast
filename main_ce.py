@@ -11,6 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 import torch
 import torch.backends.cudnn as cudnn
 from torchvision import transforms, datasets
+from torch.cuda.amp import GradScaler, autocast
 
 from util import AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate, accuracy
@@ -63,6 +64,8 @@ def parse_option():
                         help='using synchronized batch normalization')
     parser.add_argument('--warm', action='store_true',
                         help='warm-up for large batch training')
+    parser.add_argument('--amp', action='store_true',
+                        help='enable automatic mixed precision training')
     parser.add_argument('--trial', type=str, default='0',
                         help='id for recording multiple runs')
 
@@ -196,7 +199,7 @@ def set_model(opt):
     return model, criterion
 
 
-def train(train_loader, model, criterion, optimizer, epoch, opt):
+def train(train_loader, model, criterion, optimizer, epoch, opt, scalar):
     """one epoch training"""
     model.train()
 
@@ -217,8 +220,9 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
         warmup_learning_rate(opt, epoch, idx, len(train_loader), optimizer)
 
         # compute loss
-        output = model(images)
-        loss = criterion(output, labels)
+        with autocast(enabled=opt.amp):
+            output = model(images)
+            loss = criterion(output, labels)
 
         # update metric
         losses.update(loss.item(), bsz)
@@ -227,8 +231,9 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
 
         # SGD
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        scalar.scale(loss).backward()
+        scalar.step(optimizer)
+        scalar.update()
 
         # measure elapsed time
         batch_time.update(time.time() - end)
@@ -301,6 +306,9 @@ def main():
     # build optimizer
     optimizer = set_optimizer(opt, model)
 
+    # GradScalar for amp
+    scalar = GradScaler(enabled=opt.amp)
+
     # tensorboard
     # logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
     logger = SummaryWriter(log_dir=opt.tb_folder)
@@ -311,7 +319,7 @@ def main():
 
         # train for one epoch
         time1 = time.time()
-        loss, train_acc = train(train_loader, model, criterion, optimizer, epoch, opt)
+        loss, train_acc = train(train_loader, model, criterion, optimizer, epoch, opt, scalar)
         time2 = time.time()
         print('epoch {}, total time {:.2f}'.format(epoch, time2 - time1))
 
@@ -332,6 +340,9 @@ def main():
 
         if val_acc > best_acc:
             best_acc = val_acc
+            save_file = os.path.join(
+                opt.save_folder, 'best.pth'.format(epoch=epoch))
+            save_model(model, optimizer, opt, epoch, save_file)
 
         if epoch % opt.save_freq == 0:
             save_file = os.path.join(
