@@ -17,6 +17,7 @@ from torch.cuda.amp import GradScaler, autocast
 from util import AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate, accuracy
 from util import set_optimizer, save_model, TwoCropTransform
+from data_aug import ScaleTransform
 from networks.resnet_big import SupCEResNet
 from dommainnet_dataset import DomainNetDataset
 
@@ -146,12 +147,12 @@ def set_loader(opt):
     train_transform = transforms.Compose([
         transforms.RandomResizedCrop(size=32, scale=(0.2, 1.)),
         transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
+        ScaleTransform if opt.dataset == 'domainnnet' else transforms.ToTensor(),
         normalize,
     ])
 
     val_transform = transforms.Compose([
-        transforms.ToTensor(),
+        # transforms.ToTensor(),
         normalize,
     ])
 
