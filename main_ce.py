@@ -16,7 +16,7 @@ from torch.cuda.amp import GradScaler, autocast
 
 from util import AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate, accuracy
-from util import set_optimizer, save_model, TwoCropTransform
+from util import set_optimizer, save_model
 from data_aug import ScaleTransform
 from networks.resnet_big import SupCEResNet
 from dommainnet_dataset import DomainNetDataset
@@ -172,7 +172,7 @@ def set_loader(opt):
                                         transform=val_transform)
     elif opt.dataset == 'domainnet':
         train_dataset = DomainNetDataset(annotations_file="DomainNet/train_combined.txt", img_dir="DomainNet/combined/",
-                                         transform=TwoCropTransform(train_transform))
+                                         transform=train_transform)
         val_dataset = DomainNetDataset(annotations_file="DomainNet/test_combined.txt", img_dir="DomainNet/combined/",
                                        transform=val_transform)
     else:
