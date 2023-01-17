@@ -152,6 +152,7 @@ def set_loader(opt):
     ])
 
     val_transform = transforms.Compose([
+        transforms.Resize(size=(32, 32)),
         ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
         normalize,
     ])
