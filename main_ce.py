@@ -17,7 +17,7 @@ from torch.cuda.amp import GradScaler, autocast
 from util import AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate, accuracy
 from util import set_optimizer, save_model
-from data_aug import ScaleTransform
+from data_aug import ScaleTransform, GaussianBlur
 from networks.resnet_big import SupCEResNet
 from dommainnet_dataset import DomainNetDataset
 
@@ -58,6 +58,13 @@ def parse_option():
     parser.add_argument('--model', type=str, default='resnet50')
     parser.add_argument('--dataset', type=str, default='domainnet',
                         choices=['cifar10', 'cifar100', 'domainnet'], help='dataset')
+    parser.add_argument('--size', type=int, default=32, help='parameter for RandomResizedCrop/Resize')
+
+    # augmentation
+    parser.add_argument('--augmentation', type=str, default='simaugment',
+                        choices=['autoaugment', 'randaugment', 'simaugment'], help='choose augmentation')
+    parser.add_argument('--autoaugment_policy', required=False,
+                        choices=['IMAGENET', 'CIFAR10', 'SVHN'])
 
     # other setting
     parser.add_argument('--cosine', action='store_true',
@@ -106,6 +113,10 @@ def parse_option():
         else:
             opt.warmup_to = opt.learning_rate
 
+    if opt.augmentation == 'autoaugment':
+        assert opt.autoaugment_policy is not None, \
+            "Please specific the AutoAugment policy to be used for AutoAugment!"
+
     opt.tb_folder = os.path.join(opt.tb_path, opt.model_name)
     if not os.path.isdir(opt.tb_folder):
         os.makedirs(opt.tb_folder)
@@ -145,12 +156,44 @@ def set_loader(opt):
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
     normalize = transforms.Normalize(mean=mean, std=std)
 
-    train_transform = transforms.Compose([
-        transforms.RandomResizedCrop(size=32, scale=(0.2, 1.)),
-        transforms.RandomHorizontalFlip(),
-        ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
-        normalize,
-    ])
+    # train_transform = transforms.Compose([
+    #     transforms.RandomResizedCrop(size=32, scale=(0.2, 1.)),
+    #     transforms.RandomHorizontalFlip(),
+    #     ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
+    #     normalize,
+    # ])
+
+    if opt.augmentation == 'autoaugment':
+        # AutoAugment
+        train_transform = transforms.Compose([
+            transforms.Resize(size=(opt.size, opt.size)),
+            transforms.AutoAugment(transforms.AutoAugmentPolicy[opt.autoaugment_policy]),
+            ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
+            normalize
+        ])
+    elif opt.augmentation == 'randaugment':
+        # RandAugment
+        train_transform = transforms.Compose([
+            transforms.Resize(size=(opt.size, opt.size)),
+            transforms.RandAugment(),
+            ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
+            normalize
+        ])
+    elif opt.augmentation == 'simaugment':
+        # SimAugment
+        train_transform = transforms.Compose([
+            transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.)),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomApply([
+                transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)
+            ]),
+            transforms.RandomGrayscale(p=0.2),
+            GaussianBlur(kernel_size=int(0.1 * opt.size)),
+            ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
+            normalize
+        ])
+    else:
+        raise ValueError('This should not happen; check the augmentation argument!')
 
     val_transform = transforms.Compose([
         transforms.Resize(size=(32, 32)),
