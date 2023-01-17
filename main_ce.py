@@ -68,6 +68,7 @@ def parse_option():
                         help='warm-up for large batch training')
     parser.add_argument('--amp', action='store_true',
                         help='enable automatic mixed precision training')
+    parser.add_argument('--gpu_index', nargs='+', type=int, default=[0])
     parser.add_argument('--trial', type=str, default='0',
                         help='id for recording multiple runs')
 
@@ -200,7 +201,7 @@ def set_model(opt):
 
     if torch.cuda.is_available():
         if torch.cuda.device_count() > 1:
-            model = torch.nn.DataParallel(model)
+            model = torch.nn.DataParallel(model, device_ids=opt.gpu_index)
         model = model.cuda()
         criterion = criterion.cuda()
         cudnn.benchmark = True
