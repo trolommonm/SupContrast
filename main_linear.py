@@ -145,7 +145,7 @@ def set_model(opt):
     if opt.pretrained_method == 'supcon':
         model = SupConResNet(name=opt.model)
     elif opt.pretrained_method == 'ce':
-        model = SupCEResNet(name=opt.model)
+        model = SupCEResNet(name=opt.model, num_classes=opt.num_classes)
     criterion = torch.nn.CrossEntropyLoss()
 
     classifier = LinearClassifier(name=opt.model, num_classes=opt.n_cls)
