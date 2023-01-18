@@ -18,7 +18,7 @@ from data_aug import GaussianBlur, ScaleTransform
 from util import AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate, accuracy
 from util import set_optimizer, save_model
-from networks.resnet_big import SupConResNet, LinearClassifier
+from networks.resnet_big import SupConResNet, SupCEResNet, LinearClassifier
 
 try:
     import apex
@@ -71,6 +71,10 @@ def parse_option():
                         help='warm-up for large batch training')
     parser.add_argument('--ckpt', type=str, default='',
                         help='path to pre-trained model')
+    parser.add_argument('--pretrained_method', type=str, default='supcon', choices=['ce', 'supcon'],
+                        help='method used for pre-trained model')
+    parser.add_argument('--num_classes', type=int,
+                        help='number of classes used for pre-trained model if method is CE')
     parser.add_argument('--amp', action='store_true',
                         help='enable automatic mixed precision training')
     parser.add_argument('--trial', type=str, default='0',
@@ -80,8 +84,8 @@ def parse_option():
 
     # set the path according to the environment
     opt.data_folder = './datasets/'
-    opt.model_path = './save/LinearEval/{}_models'.format(opt.dataset)
-    opt.tb_path = './save/LinearEval/{}_tensorboard'.format(opt.dataset)
+    opt.model_path = './save/{}_LinearEval/{}_models'.format(opt.pretrained_method, opt.dataset)
+    opt.tb_path = './save/{}_LinearEval/{}_tensorboard'.format(opt.pretrained_method, opt.dataset)
 
     iterations = opt.lr_decay_epochs.split(',')
     opt.lr_decay_epochs = list([])
@@ -118,6 +122,10 @@ def parse_option():
         assert opt.autoaugment_policy is not None, \
             "Please specific the AutoAugment policy to be used for AutoAugment!"
 
+    if opt.pretrained_method == 'ce':
+        assert opt.num_classes is not None, \
+            "For CE, please specify the number of classes during the pre-training process!"
+
     opt.tb_folder = os.path.join(opt.tb_path, opt.model_name)
     if not os.path.isdir(opt.tb_folder):
         os.makedirs(opt.tb_folder)
@@ -134,7 +142,10 @@ def parse_option():
 
 
 def set_model(opt):
-    model = SupConResNet(name=opt.model)
+    if opt.pretrained_method == 'supcon':
+        model = SupConResNet(name=opt.model)
+    elif opt.pretrained_method == 'ce':
+        model = SupCEResNet(name=opt.model)
     criterion = torch.nn.CrossEntropyLoss()
 
     classifier = LinearClassifier(name=opt.model, num_classes=opt.n_cls)
@@ -156,7 +167,7 @@ def set_model(opt):
         criterion = criterion.cuda()
         cudnn.benchmark = True
 
-        model.load_state_dict(state_dict)
+    model.load_state_dict(state_dict)
 
     return model, classifier, criterion
 
