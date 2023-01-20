@@ -62,7 +62,7 @@ def parse_option():
 
     # augmentation
     parser.add_argument('--augmentation', type=str, default='simaugment',
-                        choices=['autoaugment', 'randaugment', 'simaugment'], help='choose augmentation')
+                        choices=['autoaugment', 'randaugment', 'simaugment', 'simple'], help='choose augmentation')
     parser.add_argument('--autoaugment_policy', required=False,
                         choices=['IMAGENET', 'CIFAR10', 'SVHN'])
 
@@ -156,13 +156,6 @@ def set_loader(opt):
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
     normalize = transforms.Normalize(mean=mean, std=std)
 
-    # train_transform = transforms.Compose([
-    #     transforms.RandomResizedCrop(size=32, scale=(0.2, 1.)),
-    #     transforms.RandomHorizontalFlip(),
-    #     ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
-    #     normalize,
-    # ])
-
     if opt.augmentation == 'autoaugment':
         # AutoAugment
         train_transform = transforms.Compose([
@@ -191,6 +184,13 @@ def set_loader(opt):
             GaussianBlur(kernel_size=int(0.1 * opt.size)),
             ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
             normalize
+        ])
+    elif opt.augmentation == 'simple':
+        train_transform = transforms.Compose([
+            transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.)),
+            transforms.RandomHorizontalFlip(),
+            ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
+            normalize,
         ])
     else:
         raise ValueError('This should not happen; check the augmentation argument!')
