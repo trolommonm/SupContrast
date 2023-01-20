@@ -60,7 +60,7 @@ def parse_option():
 
     # augmentation
     parser.add_argument('--augmentation', type=str, default='simaugment',
-                        choices=['autoaugment', 'randaugment', 'simaugment'], help='choose augmentation')
+                        choices=['autoaugment', 'randaugment', 'simaugment', 'none'], help='choose augmentation')
     parser.add_argument('--autoaugment_policy', required=False,
                         choices=['IMAGENET', 'CIFAR10', 'SVHN'])
 
@@ -190,7 +190,7 @@ def set_loader(opt):
         train_transform = transforms.Compose([
             transforms.Resize(size=(opt.size, opt.size)),
             transforms.AutoAugment(transforms.AutoAugmentPolicy[opt.autoaugment_policy]),
-            ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
+            transforms.ToTensor(),
             # normalize
         ])
     elif opt.augmentation == 'randaugment':
@@ -198,7 +198,7 @@ def set_loader(opt):
         train_transform = transforms.Compose([
             transforms.Resize(size=(opt.size, opt.size)),
             transforms.RandAugment(),
-            ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
+            transforms.ToTensor(),
             # normalize
         ])
     elif opt.augmentation == 'simaugment':
@@ -211,7 +211,12 @@ def set_loader(opt):
             ]),
             transforms.RandomGrayscale(p=0.2),
             GaussianBlur(kernel_size=int(0.1 * opt.size)),
-            ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
+            transforms.ToTensor(),
+            # normalize
+        ])
+    elif opt.augmentation == 'none':
+        train_transform = transforms.Compose([
+            transforms.ToTensor(),
             # normalize
         ])
     else:
