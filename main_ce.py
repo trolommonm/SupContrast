@@ -73,6 +73,8 @@ def parse_option():
                         help='using synchronized batch normalization')
     parser.add_argument('--warm', action='store_true',
                         help='warm-up for large batch training')
+    parser.add_argument('--warmup_from', type=float, required=False,
+                        help='learning rate to warm up from')
     parser.add_argument('--amp', action='store_true',
                         help='enable automatic mixed precision training')
     parser.add_argument('--gpu_index', nargs='+', type=int, default=[0])
@@ -104,7 +106,7 @@ def parse_option():
 
     if opt.warm:
         opt.model_name = '{}_warm'.format(opt.model_name)
-        opt.warmup_from = 0.01
+        opt.warmup_from = opt.learning_rate * 0.1 if opt.warmup_from is None else opt.warmup_from
         opt.warm_epochs = 10
         if opt.cosine:
             eta_min = opt.learning_rate * (opt.lr_decay_rate ** 3)
