@@ -79,6 +79,8 @@ def parse_option():
                         help='enable automatic mixed precision training')
     parser.add_argument('--trial', type=str, default='0',
                         help='id for recording multiple runs')
+    parser.add_argument('--subtrial', type=str, default='0',
+                        help='subtrial id for recording multiple runs of the same trial')
 
     opt = parser.parse_args()
 
@@ -95,6 +97,8 @@ def parse_option():
     opt.model_name = '{}_{}_lr_{}_decay_{}_bsz_{}_trial_{}'. \
         format(opt.dataset, opt.model, opt.learning_rate, opt.weight_decay,
                opt.batch_size, opt.trial)
+    if opt.subtrial:
+        opt.model_name += "_subtrial_{}".format(opt.subtrial)
 
     if opt.cosine:
         opt.model_name = '{}_cosine'.format(opt.model_name)
