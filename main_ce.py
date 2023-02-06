@@ -397,17 +397,17 @@ def main():
             best_acc = val_acc
             save_file = os.path.join(
                 opt.save_folder, 'best.pth'.format(epoch=epoch))
-            save_model(model, optimizer, opt, epoch, save_file)
+            save_model(model, optimizer, opt, epoch, save_file, scalar)
 
         if epoch % opt.save_freq == 0:
             save_file = os.path.join(
                 opt.save_folder, 'ckpt_epoch_{epoch}.pth'.format(epoch=epoch))
-            save_model(model, optimizer, opt, epoch, save_file)
+            save_model(model, optimizer, opt, epoch, save_file, scalar)
 
     # save the last model
     save_file = os.path.join(
         opt.save_folder, 'last.pth')
-    save_model(model, optimizer, opt, opt.epochs, save_file)
+    save_model(model, optimizer, opt, opt.epochs, save_file, scalar)
 
     print('best accuracy: {:.2f}'.format(best_acc))
 
