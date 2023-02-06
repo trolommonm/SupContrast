@@ -366,7 +366,7 @@ def main():
     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
     # build optimizer
-    optimizer = set_optimizer(opt, ckpt)
+    optimizer = set_optimizer(opt, model, ckpt)
 
     # GradScalar for amp
     scalar = set_gradscalar(opt, ckpt)
