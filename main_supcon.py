@@ -255,6 +255,9 @@ def set_model(opt, ckpt=None):
     model = SupConResNet(name=opt.model)
     criterion = SupConLoss(temperature=opt.temp)
 
+    if ckpt:
+        state_dict = ckpt["model"]
+
     # enable synchronized Batch Normalization
     if opt.syncBN:
         model = apex.parallel.convert_syncbn_model(model)
@@ -265,7 +268,6 @@ def set_model(opt, ckpt=None):
             model.encoder = torch.nn.DataParallel(model.encoder)
         else:
             if ckpt:
-                state_dict = ckpt['model']
                 new_state_dict = {}
                 for k, v in state_dict.items():
                     k = k.replace("module.", "")
