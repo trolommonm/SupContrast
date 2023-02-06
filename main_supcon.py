@@ -93,9 +93,9 @@ def parse_option():
     # resume training
     parser.add_argument('--resume', action='store_true',
                         help='resume training')
-    parser.add_argument('--model_name', type=str,
+    parser.add_argument('--model_name', type=str, required=False,
                         help='model name that was created during training')
-    parser.add_argument('--model_ckpt', type=str,
+    parser.add_argument('--model_ckpt', type=str, required=False,
                         help='checkpoint to resume from')
 
     opt = parser.parse_args()
