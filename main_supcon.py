@@ -12,12 +12,12 @@ from torch.utils.tensorboard import SummaryWriter
 import torch
 import torch.backends.cudnn as cudnn
 from torchvision import transforms, datasets
-from torch.cuda.amp import GradScaler, autocast
+from torch.cuda.amp import autocast
 
 from util import TwoCropTransform, AverageMeter
 from data_aug import ScaleTransform, GaussianBlur
 from util import adjust_learning_rate, warmup_learning_rate
-from util import set_optimizer, save_model
+from util import set_optimizer, save_model, set_gradscalar
 from networks.resnet_big import SupConResNet
 from losses import SupConLoss
 from dommainnet_dataset import DomainNetDataset
@@ -90,6 +90,14 @@ def parse_option():
     parser.add_argument('--trial', type=str, default='0',
                         help='id for recording multiple runs')
 
+    # resume training
+    parser.add_argument('--resume', action='store_true',
+                        help='resume training')
+    parser.add_argument('--model_name', type=str,
+                        help='model name that was created during training')
+    parser.add_argument('--model_ckpt', type=str,
+                        help='checkpoint to resume from')
+
     opt = parser.parse_args()
 
     # check if dataset is path that passed required arguments
@@ -98,23 +106,10 @@ def parse_option():
                and opt.mean is not None \
                and opt.std is not None
 
-    # set the path according to the environment
-    if opt.data_folder is None:
-        opt.data_folder = './datasets/'
-    opt.model_path = './save/SupCon/{}_models'.format(opt.dataset)
-    opt.tb_path = './save/SupCon/{}_tensorboard'.format(opt.dataset)
-
     iterations = opt.lr_decay_epochs.split(',')
     opt.lr_decay_epochs = list([])
     for it in iterations:
         opt.lr_decay_epochs.append(int(it))
-
-    opt.model_name = '{}_{}_{}_lr_{}_decay_{}_bsz_{}_temp_{}_trial_{}'. \
-        format(opt.method, opt.dataset, opt.model, opt.learning_rate,
-               opt.weight_decay, opt.batch_size, opt.temp, opt.trial)
-
-    if opt.cosine:
-        opt.model_name = '{}_cosine'.format(opt.model_name)
 
     # warm-up for large-batch training,
     # if opt.batch_size > 256:
@@ -135,6 +130,23 @@ def parse_option():
         assert opt.autoaugment_policy is not None, \
             "Please specific the AutoAugment policy to be used for AutoAugment!"
 
+    # set the path according to the environment
+    if opt.data_folder is None:
+        opt.data_folder = './datasets/'
+    opt.model_path = './save/SupCon/{}_models'.format(opt.dataset)
+    opt.tb_path = './save/SupCon/{}_tensorboard'.format(opt.dataset)
+
+    if opt.resume:
+        assert opt.model_name is not None, "Please specify the model name that was created during training!"
+        assert opt.model_ckpt is not None, "Please specify the checkpoint to resume from!"
+    else:
+        opt.model_name = '{}_{}_{}_lr_{}_decay_{}_bsz_{}_temp_{}_trial_{}'. \
+            format(opt.method, opt.dataset, opt.model, opt.learning_rate,
+                   opt.weight_decay, opt.batch_size, opt.temp, opt.trial)
+
+        if opt.cosine:
+            opt.model_name = '{}_cosine'.format(opt.model_name)
+
     opt.tb_folder = os.path.join(opt.tb_path, opt.model_name)
     if not os.path.isdir(opt.tb_folder):
         os.makedirs(opt.tb_folder)
@@ -144,7 +156,8 @@ def parse_option():
         os.makedirs(opt.save_folder)
 
     # save arguments used
-    with open(os.path.join(opt.save_folder, 'args.json'), 'w') as f:
+    args_filename = 'args_resume.json' if opt.resume else 'args.json'
+    with open(os.path.join(opt.save_folder, args_filename), 'w') as f:
         json.dump(opt.__dict__, f, indent=2)
 
     return opt
@@ -237,7 +250,7 @@ def set_loader(opt):
     return train_loader
 
 
-def set_model(opt):
+def set_model(opt, ckpt=None):
     model = SupConResNet(name=opt.model)
     criterion = SupConLoss(temperature=opt.temp)
 
@@ -249,9 +262,21 @@ def set_model(opt):
         if torch.cuda.device_count() > 1:
             print(f"Using Data Parallel model, detected {torch.cuda.device_count()} GPUs.")
             model.encoder = torch.nn.DataParallel(model.encoder)
+        else:
+            if ckpt:
+                state_dict = ckpt['model']
+                new_state_dict = {}
+                for k, v in state_dict.items():
+                    k = k.replace("module.", "")
+                    new_state_dict[k] = v
+                state_dict = new_state_dict
+
         model = model.cuda()
         criterion = criterion.cuda()
         cudnn.benchmark = True
+
+    if ckpt:
+        model.load_state_dict(state_dict)
 
     return model, criterion
 
@@ -322,25 +347,34 @@ def main():
     # build data loader
     train_loader = set_loader(opt)
 
+    # resume training
+    if opt.resume:
+        model_ckpt_path = os.path.join(opt.save_folder, opt.model_ckpt)
+        print(f"Resuming training, loading {model_ckpt_path}...")
+        ckpt = torch.load(model_ckpt_path)
+    else:
+        ckpt = None
+
     # build model and criterion
-    model, criterion = set_model(opt)
+    model, criterion = set_model(opt, ckpt)
     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
     print("Model Summary")
     print(model)
     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
     # build optimizer
-    optimizer = set_optimizer(opt, model)
+    optimizer = set_optimizer(opt, ckpt)
 
     # GradScalar for amp
-    scalar = GradScaler(enabled=opt.amp)
+    scalar = set_gradscalar(opt, ckpt)
 
     # tensorboard
     # logger = tb_logger.Logger(logdir=opt.tb_folder, flush_secs=2)
     logger = SummaryWriter(log_dir=opt.tb_folder)
 
     # training routine
-    for epoch in range(1, opt.epochs + 1):
+    start_epoch = ckpt["epoch"] + 1 if opt.resume else 1
+    for epoch in range(start_epoch, opt.epochs + 1):
         adjust_learning_rate(opt, optimizer, epoch)
 
         # train for one epoch

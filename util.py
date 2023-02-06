@@ -4,6 +4,7 @@ import math
 import numpy as np
 import torch
 import torch.optim as optim
+from torch.cuda.amp import GradScaler
 
 
 class TwoCropTransform:
@@ -75,12 +76,25 @@ def warmup_learning_rate(args, epoch, batch_id, total_batches, optimizer):
             param_group['lr'] = lr
 
 
-def set_optimizer(opt, model):
+def set_optimizer(opt, model, ckpt=None):
     optimizer = optim.SGD(model.parameters(),
                           lr=opt.learning_rate,
                           momentum=opt.momentum,
                           weight_decay=opt.weight_decay)
+
+    if ckpt:
+        optimizer.load_state_dict(ckpt['optimizer'])
+
     return optimizer
+
+
+def set_gradscalar(opt, ckpt=None):
+    scalar = GradScaler(opt.amp)
+
+    if ckpt:
+        scalar.load_state_dict(ckpt['scalar'])
+
+    return scalar
 
 
 def save_model(model, optimizer, opt, epoch, save_file, scalar=None):
