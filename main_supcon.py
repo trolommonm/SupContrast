@@ -116,7 +116,6 @@ def parse_option():
     #     opt.warm = True
 
     if opt.warm:
-        opt.model_name = '{}_warm'.format(opt.model_name)
         opt.warmup_from = 0.01
         opt.warm_epochs = 10
         if opt.cosine:
@@ -146,6 +145,8 @@ def parse_option():
 
         if opt.cosine:
             opt.model_name = '{}_cosine'.format(opt.model_name)
+        if opt.warm:
+            opt.model_name = '{}_warm'.format(opt.model_name)
 
     opt.tb_folder = os.path.join(opt.tb_path, opt.model_name)
     if not os.path.isdir(opt.tb_folder):
