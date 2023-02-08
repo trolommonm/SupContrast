@@ -20,6 +20,7 @@ from util import set_optimizer, save_model
 from data_aug import ScaleTransform, GaussianBlur
 from networks.resnet_big import SupCEResNet
 from dommainnet_dataset import DomainNetDataset
+from data_loader import set_loader
 
 try:
     import apex
@@ -143,99 +144,6 @@ def parse_option():
     return opt
 
 
-def set_loader(opt):
-    # construct data loader
-    if opt.dataset == 'cifar10':
-        mean = (0.4914, 0.4822, 0.4465)
-        std = (0.2023, 0.1994, 0.2010)
-    elif opt.dataset == 'cifar100':
-        mean = (0.5071, 0.4867, 0.4408)
-        std = (0.2675, 0.2565, 0.2761)
-    elif opt.dataset == 'domainnet':
-        mean = (0, 0, 0)
-        std = (1, 1, 1)
-    else:
-        raise ValueError('dataset not supported: {}'.format(opt.dataset))
-    normalize = transforms.Normalize(mean=mean, std=std)
-
-    if opt.augmentation == 'autoaugment':
-        # AutoAugment
-        train_transform = transforms.Compose([
-            transforms.Resize(size=(opt.size, opt.size)),
-            transforms.AutoAugment(transforms.AutoAugmentPolicy[opt.autoaugment_policy]),
-            ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
-            normalize
-        ])
-    elif opt.augmentation == 'randaugment':
-        # RandAugment
-        train_transform = transforms.Compose([
-            transforms.Resize(size=(opt.size, opt.size)),
-            transforms.RandAugment(),
-            ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
-            normalize
-        ])
-    elif opt.augmentation == 'simaugment':
-        # SimAugment
-        train_transform = transforms.Compose([
-            transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.)),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomApply([
-                transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)
-            ]),
-            transforms.RandomGrayscale(p=0.2),
-            GaussianBlur(kernel_size=int(0.1 * opt.size)),
-            ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
-            normalize
-        ])
-    elif opt.augmentation == 'simple':
-        train_transform = transforms.Compose([
-            transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.)),
-            transforms.RandomHorizontalFlip(),
-            ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
-            normalize,
-        ])
-    else:
-        raise ValueError('This should not happen; check the augmentation argument!')
-
-    val_transform = transforms.Compose([
-        transforms.Resize(size=(32, 32)),
-        ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
-        normalize,
-    ])
-
-    if opt.dataset == 'cifar10':
-        train_dataset = datasets.CIFAR10(root=opt.data_folder,
-                                         transform=train_transform,
-                                         download=True)
-        val_dataset = datasets.CIFAR10(root=opt.data_folder,
-                                       train=False,
-                                       transform=val_transform)
-    elif opt.dataset == 'cifar100':
-        train_dataset = datasets.CIFAR100(root=opt.data_folder,
-                                          transform=train_transform,
-                                          download=True)
-        val_dataset = datasets.CIFAR100(root=opt.data_folder,
-                                        train=False,
-                                        transform=val_transform)
-    elif opt.dataset == 'domainnet':
-        train_dataset = DomainNetDataset(annotations_file="DomainNet/train_combined.txt", img_dir="DomainNet/combined/",
-                                         transform=train_transform)
-        val_dataset = DomainNetDataset(annotations_file="DomainNet/test_combined.txt", img_dir="DomainNet/combined/",
-                                       transform=val_transform)
-    else:
-        raise ValueError(opt.dataset)
-
-    train_sampler = None
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=opt.batch_size, shuffle=(train_sampler is None),
-        num_workers=opt.num_workers, pin_memory=True, sampler=train_sampler)
-    val_loader = torch.utils.data.DataLoader(
-        val_dataset, batch_size=256, shuffle=False,
-        num_workers=8, pin_memory=True)
-
-    return train_loader, val_loader
-
-
 def set_model(opt):
     model = SupCEResNet(name=opt.model, num_classes=opt.n_cls)
     criterion = torch.nn.CrossEntropyLoss()
@@ -353,7 +261,7 @@ def main():
     opt = parse_option()
 
     # build data loader
-    train_loader, val_loader = set_loader(opt)
+    train_loader, val_loader = set_loader(opt, "ce")
 
     # build model and criterion
     model, criterion = set_model(opt)

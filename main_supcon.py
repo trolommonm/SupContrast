@@ -14,13 +14,14 @@ import torch.backends.cudnn as cudnn
 from torchvision import transforms, datasets
 from torch.cuda.amp import autocast
 
-from util import TwoCropTransform, AverageMeter
-from data_aug import ScaleTransform, GaussianBlur
+from util import AverageMeter
+from data_aug import ScaleTransform, GaussianBlur, TwoCropTransform
 from util import adjust_learning_rate, warmup_learning_rate
 from util import set_optimizer, save_model, set_gradscalar
 from networks.resnet_big import SupConResNet
 from losses import SupConLoss
 from dommainnet_dataset import DomainNetDataset
+from data_loader import set_loader
 
 try:
     import apex
@@ -164,93 +165,6 @@ def parse_option():
     return opt
 
 
-def set_loader(opt):
-    # construct data loader
-    if opt.dataset == 'cifar10':
-        mean = (0.4914, 0.4822, 0.4465)
-        std = (0.2023, 0.1994, 0.2010)
-    elif opt.dataset == 'cifar100':
-        mean = (0.5071, 0.4867, 0.4408)
-        std = (0.2675, 0.2565, 0.2761)
-    elif opt.dataset == 'path':
-        mean = eval(opt.mean)
-        std = eval(opt.std)
-    elif opt.dataset == 'domainnet':
-        mean = (0, 0, 0)
-        std = (1, 1, 1)
-    else:
-        raise ValueError('dataset not supported: {}'.format(opt.dataset))
-    normalize = transforms.Normalize(mean=mean, std=std)
-
-    # train_transform = transforms.Compose([
-    #     transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.)),
-    #     transforms.RandomHorizontalFlip(),
-    #     transforms.RandomApply([
-    #         transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)
-    #     ], p=0.8),
-    #     transforms.RandomGrayscale(p=0.2),
-    #     ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
-    #     # transforms.ToTensor(),
-    #     normalize,
-    # ])
-
-    if opt.augmentation == 'autoaugment':
-        # AutoAugment
-        train_transform = transforms.Compose([
-            transforms.Resize(size=(opt.size, opt.size)),
-            transforms.AutoAugment(transforms.AutoAugmentPolicy[opt.autoaugment_policy]),
-            ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
-            normalize
-        ])
-    elif opt.augmentation == 'randaugment':
-        # RandAugment
-        train_transform = transforms.Compose([
-            transforms.Resize(size=(opt.size, opt.size)),
-            transforms.RandAugment(),
-            ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
-            normalize
-        ])
-    elif opt.augmentation == 'simaugment':
-        # SimAugment
-        train_transform = transforms.Compose([
-            transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.)),
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomApply([
-                transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)
-            ]),
-            transforms.RandomGrayscale(p=0.2),
-            GaussianBlur(kernel_size=int(0.1 * opt.size)),
-            ScaleTransform() if opt.dataset == 'domainnet' else transforms.ToTensor(),
-            normalize
-        ])
-    else:
-        raise ValueError('This should not happen; check the augmentation argument!')
-
-    if opt.dataset == 'cifar10':
-        train_dataset = datasets.CIFAR10(root=opt.data_folder,
-                                         transform=TwoCropTransform(train_transform),
-                                         download=True)
-    elif opt.dataset == 'cifar100':
-        train_dataset = datasets.CIFAR100(root=opt.data_folder,
-                                          transform=TwoCropTransform(train_transform),
-                                          download=True)
-    elif opt.dataset == 'path':
-        train_dataset = datasets.ImageFolder(root=opt.data_folder,
-                                             transform=TwoCropTransform(train_transform))
-    elif opt.dataset == 'domainnet':
-        train_dataset = DomainNetDataset(annotations_file="DomainNet/train_combined.txt", img_dir="DomainNet/combined/",
-                                         transform=TwoCropTransform(train_transform))
-    else:
-        raise ValueError(opt.dataset)
-
-    train_sampler = None
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=opt.batch_size, shuffle=(train_sampler is None),
-        num_workers=opt.num_workers, pin_memory=True, sampler=train_sampler)
-
-    return train_loader
-
-
 def set_model(opt, ckpt=None):
     model = SupConResNet(name=opt.model)
     criterion = SupConLoss(temperature=opt.temp)
@@ -348,7 +262,7 @@ def main():
     opt = parse_option()
 
     # build data loader
-    train_loader = set_loader(opt)
+    train_loader, _ = set_loader(opt, "supcon")
 
     # resume training
     if opt.resume:

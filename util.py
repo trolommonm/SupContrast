@@ -7,15 +7,6 @@ import torch.optim as optim
 from torch.cuda.amp import GradScaler
 
 
-class TwoCropTransform:
-    """Create two crops of the same image"""
-    def __init__(self, transform):
-        self.transform = transform
-
-    def __call__(self, x):
-        return [self.transform(x), self.transform(x)]
-
-
 class AverageMeter(object):
     """Computes and stores the average and current value"""
     def __init__(self):
