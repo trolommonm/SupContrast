@@ -56,6 +56,7 @@ def parse_option():
     parser.add_argument('--model', type=str, default='resnet50')
     parser.add_argument('--dataset', type=str, default='cifar10',
                         choices=['cifar10', 'cifar100', 'dtd'], help='dataset')
+    parser.add_argument('--size', type=int, default=32, help='parameter for RandomResizedCrop/Resize')
 
     # augmentation
     parser.add_argument('--augmentation', type=str, default='none',
