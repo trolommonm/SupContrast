@@ -55,7 +55,7 @@ def parse_option():
     # model dataset
     parser.add_argument('--model', type=str, default='resnet50')
     parser.add_argument('--dataset', type=str, default='cifar10',
-                        choices=['cifar10', 'cifar100', 'dtd'], help='dataset')
+                        choices=['cifar10', 'cifar100', 'dtd', 'svhn'], help='dataset')
     parser.add_argument('--size', type=int, default=32, help='parameter for RandomResizedCrop/Resize')
 
     # augmentation
@@ -121,6 +121,8 @@ def parse_option():
         opt.n_cls = 100
     elif opt.dataset == 'dtd':
         opt.n_cls = 47
+    elif opt.dataset == 'svhn':
+        opt.n_cls = 10
     else:
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
 

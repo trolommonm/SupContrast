@@ -46,6 +46,15 @@ def set_loader(opt, method):
                                    split="test",
                                    transform=val_transform,
                                    download=True)
+    elif opt.dataset == "svhn":
+        train_dataset = datasets.SVHN(root=opt.data_folder,
+                                      split="train",
+                                      transform=train_transform,
+                                      download=True)
+        val_dataset = datasets.SVHN(root=opt.data_folder,
+                                    split="test",
+                                    transform=val_transform,
+                                    download=True)
     else:
         raise ValueError(opt.dataset)
 
