@@ -13,14 +13,14 @@ def set_loader(opt, method):
 
     if opt.dataset == "cifar10":
         train_dataset = datasets.CIFAR10(root=opt.data_folder,
-                                         transform=TwoCropTransform(train_transform),
+                                         transform=train_transform,
                                          download=True)
         val_dataset = datasets.CIFAR10(root=opt.data_folder,
                                        train=False,
                                        transform=val_transform)
     elif opt.dataset == "cifar100":
         train_dataset = datasets.CIFAR100(root=opt.data_folder,
-                                          transform=TwoCropTransform(train_transform),
+                                          transform=train_transform,
                                           download=True)
         val_dataset = datasets.CIFAR100(root=opt.data_folder,
                                         train=False,
