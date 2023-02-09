@@ -41,7 +41,7 @@ class Kaokore(Dataset):
 
         labels = load_labels(os.path.join(root, 'labels.csv'))
         self.entries = [
-            (label_entry['image'], int(label_entry['gender'], int(label_entry['status'])))
+            (label_entry['image'], int(label_entry['gender']), int(label_entry['status']))
             for label_entry in labels
             if label_entry['set'] == split and os.path.exists(
                 os.path.join(self.root, 'images_256', label_entry['image']))
