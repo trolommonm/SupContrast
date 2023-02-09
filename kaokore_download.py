@@ -97,7 +97,7 @@ if __name__ == '__main__':
 
     print('Downloading Kaokore version {}, saving to {}'.format(args.dataset_version, args.dir))
     print('Downloading {} images using {} threads'.format(len(iurls), args.threads))
-    images_dir = join(args.dir, 'images_256')
+    images_dir = join(script_dataset_dir, 'images_256')
     os.makedirs(images_dir, exist_ok=True)
 
     pool = multiprocessing.Pool(args.threads)
@@ -109,7 +109,7 @@ if __name__ == '__main__':
     else:  # Use a basic status print
         for i, _ in enumerate(pool.imap_unordered(download_and_check_image, iurls)):
             print('Download images: %7d / %d Done' % (i + 1, len(iurls)), end='\r', flush=True)
-    print()
+    print("Download completed")
 
     # TODO: Download these files if not already present
     for file in [
