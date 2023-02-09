@@ -88,7 +88,7 @@ if __name__ == '__main__':
 
     script_dir = dirname(realpath(__file__))
     dataset_suffix = {'1.0': '', '1.1': '_v1.1', '1.2': '_v1.2', '1.3': '_v1.3'}[args.dataset_version]
-    script_dataset_dir = join(script_dir, 'dataset{}'.format(dataset_suffix))
+    script_dataset_dir = join(script_dir, 'kaokore{}'.format(dataset_suffix))
 
     urls_file = join(script_dataset_dir, 'urls.txt')
     iurls = load_urls(urls_file)
