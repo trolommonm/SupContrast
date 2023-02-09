@@ -123,6 +123,8 @@ def parse_option():
         opt.n_cls = 47
     elif opt.dataset == 'svhn':
         opt.n_cls = 10
+    elif opt.dataset == 'kaokore':
+        opt.n_cls = 8
     else:
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
 
