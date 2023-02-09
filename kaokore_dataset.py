@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# obtained from https://github.com/rois-codh/kaokore/blob/master/code/dataloader_pytorch.py
+# adapted from https://github.com/rois-codh/kaokore/blob/master/code/dataloader_pytorch.py
 
 import csv
 import os
@@ -37,11 +37,11 @@ class Kaokore(Dataset):
 
         self.split = verify_str_arg(split, ['train', 'dev', 'test'])
 
-        self.category = verify_str_arg(category, ['gender', 'status'])
+        # self.category = verify_str_arg(category, ['gender', 'status'])
 
         labels = load_labels(os.path.join(root, 'labels.csv'))
         self.entries = [
-            (label_entry['image'], int(label_entry[category]))
+            (label_entry['image'], int(label_entry['gender'], int(label_entry['status'])))
             for label_entry in labels
             if label_entry['set'] == split and os.path.exists(
                 os.path.join(self.root, 'images_256', label_entry['image']))
@@ -52,7 +52,8 @@ class Kaokore(Dataset):
         return len(self.entries)
 
     def __getitem__(self, index):
-        image_filename, label = self.entries[index]
+        image_filename, gender, status = self.entries[index]
+        label = gender * 4 + status
 
         image_filepath = os.path.join(self.root, 'images_256', image_filename)
         image = image_loader(image_filepath)
