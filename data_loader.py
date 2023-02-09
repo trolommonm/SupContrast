@@ -2,6 +2,7 @@ import torch
 from torchvision import transforms, datasets
 from data_aug import ScaleTransform, GaussianBlur, TwoCropTransform
 from dommainnet_dataset import DomainNetDataset
+from kaokore_dataset import Kaokore
 
 
 def set_loader(opt, method):
@@ -55,6 +56,13 @@ def set_loader(opt, method):
                                     split="test",
                                     transform=val_transform,
                                     download=True)
+    elif opt.dataset == "kaokore":
+        train_dataset = Kaokore(root="kaokore_v1.1",
+                                split="train",
+                                transform=train_transform)
+        val_dataset = Kaokore(root="kaokore_v1.1",
+                              split="test",
+                              transform=val_transform)
     else:
         raise ValueError(opt.dataset)
 

@@ -32,12 +32,10 @@ def load_labels(path):
 
 class Kaokore(Dataset):
 
-    def __init__(self, root, split='train', category='gender', transform=None):
+    def __init__(self, root, split='train', transform=None):
         self.root = root = os.path.expanduser(root)
 
         self.split = verify_str_arg(split, ['train', 'dev', 'test'])
-
-        # self.category = verify_str_arg(category, ['gender', 'status'])
 
         labels = load_labels(os.path.join(root, 'labels.csv'))
         self.entries = [
