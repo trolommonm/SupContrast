@@ -42,6 +42,18 @@ def accuracy(output, target, topk=(1,)):
         return res
 
 
+def mean_per_class_accuracy(output, target, num_classes):
+    with torch.no_grad():
+        _, preds = output.topk(1, 1, True, True)
+        preds = preds.t().flatten()
+
+        acc = [0 for _ in range(num_classes)]
+        for c in range(num_classes):
+            acc[c] = ((preds == target) * (target == c)).float() / (max(target == c).sum(), 1)
+
+        return np.mean(acc)
+
+
 def adjust_learning_rate(args, optimizer, epoch):
     lr = args.learning_rate
     if args.cosine:

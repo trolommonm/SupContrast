@@ -14,7 +14,7 @@ from torchvision import transforms, datasets
 from torch.utils.tensorboard import SummaryWriter
 
 from util import AverageMeter
-from util import adjust_learning_rate, warmup_learning_rate, accuracy
+from util import adjust_learning_rate, warmup_learning_rate, accuracy, mean_per_class_accuracy
 from util import set_optimizer, save_model
 from networks.resnet_big import SupConResNet, SupCEResNet, LinearClassifier
 from data_loader import set_loader
@@ -252,6 +252,10 @@ def validate(val_loader, model, classifier, criterion, opt):
     losses = AverageMeter()
     top1 = AverageMeter()
 
+    if opt.dataset == 'flowers102':
+        all_outputs = []
+        all_labels = []
+
     with torch.no_grad():
         end = time.time()
         for idx, (images, labels) in enumerate(val_loader):
@@ -262,6 +266,10 @@ def validate(val_loader, model, classifier, criterion, opt):
             # forward
             output = classifier(model.encoder(images))
             loss = criterion(output, labels)
+
+            if opt.dataset == 'flowers102':
+                all_outputs.append(output)
+                all_labels.append(labels)
 
             # update metric
             losses.update(loss.item(), bsz)
@@ -280,7 +288,11 @@ def validate(val_loader, model, classifier, criterion, opt):
                     idx, len(val_loader), batch_time=batch_time,
                     loss=losses, top1=top1))
 
+
     print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
+    if opt.dataset == 'flowers102':
+        mean_per_class_acc = mean_per_class_accuracy(torch.vstack(all_outputs), torch.vstack(all_labels), opt.n_cls)
+        print(f' * Mean-Per-Class Acc {mean_per_class_acc:.3f}')
     return losses.avg, top1.avg
 
 
