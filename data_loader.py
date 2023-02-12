@@ -63,6 +63,13 @@ def set_loader(opt, method):
         val_dataset = Kaokore(root="kaokore_v1.1",
                               split="test",
                               transform=val_transform)
+    elif opt.dataset == "flowers102":
+        train_dataset = datasets.Flowers102(root=opt.data_folder,
+                                            split="train",
+                                            transform=train_transform)
+        val_dataset = datasets.Flowers102(root=opt.data_folder,
+                                          split="test",
+                                          transform=val_transform)
     else:
         raise ValueError(opt.dataset)
 
