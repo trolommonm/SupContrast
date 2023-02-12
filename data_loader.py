@@ -66,10 +66,12 @@ def set_loader(opt, method):
     elif opt.dataset == "flowers102":
         train_dataset = datasets.Flowers102(root=opt.data_folder,
                                             split="train",
-                                            transform=train_transform)
+                                            transform=train_transform,
+                                            download=True)
         val_dataset = datasets.Flowers102(root=opt.data_folder,
                                           split="test",
-                                          transform=val_transform)
+                                          transform=val_transform,
+                                          download=True)
     else:
         raise ValueError(opt.dataset)
 
