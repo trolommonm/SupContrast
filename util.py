@@ -46,12 +46,12 @@ def mean_per_class_accuracy(output, target, num_classes):
     with torch.no_grad():
         _, preds = output.topk(1, 1, True, True)
         preds = preds.t().flatten()
+        print("preds shape: ", preds.shape)
 
         acc = [0 for _ in range(num_classes)]
         for c in range(num_classes):
-            accuracy_c = ((preds == target) * (target == c)).float() / max((target == c).sum(), 1)
-            print("+++")
-            print(accuracy_c)
+            accuracy_c = ((preds == target) * (target == c)).sum() / max((target == c).sum(), 1)
+            print("accuracy_c shape: ", accuracy_c.shape)
             acc[c] = accuracy_c.cpu()
 
         return np.mean(acc)
