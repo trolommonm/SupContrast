@@ -69,6 +69,12 @@ def set_loader(opt, method):
                                             transform=train_transform,
                                             download=True)
         val_dataset = datasets.Flowers102(root=opt.data_folder,
+                                          split="val",
+                                          transform=train_transform,
+                                          download=True)
+        train_dataset = torch.utils.data.ConcatDataset([train_dataset, val_dataset])
+
+        val_dataset = datasets.Flowers102(root=opt.data_folder,
                                           split="test",
                                           transform=val_transform,
                                           download=True)
