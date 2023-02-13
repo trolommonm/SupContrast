@@ -50,7 +50,7 @@ def mean_per_class_accuracy(output, target, num_classes):
         acc = [0 for _ in range(num_classes)]
         for c in range(num_classes):
             accuracy_c = ((preds == target) * (target == c)).float() / max((target == c).sum(), 1)
-            acc[c] = accuracy_c[0]
+            acc[c] = accuracy_c.cpu()
 
         return np.mean(acc)
 
