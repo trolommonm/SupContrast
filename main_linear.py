@@ -288,11 +288,10 @@ def validate(val_loader, model, classifier, criterion, opt):
                     idx, len(val_loader), batch_time=batch_time,
                     loss=losses, top1=top1))
 
-
     print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
     if opt.dataset == 'flowers102':
         mean_per_class_acc = mean_per_class_accuracy(torch.vstack(all_outputs), torch.vstack(all_labels), opt.n_cls)
-        print(f' * Mean-Per-Class Acc {mean_per_class_acc:.3f}')
+        print(f" * Mean-Per-Class Acc {mean_per_class_acc:.3f}")
     return losses.avg, top1.avg
 
 
