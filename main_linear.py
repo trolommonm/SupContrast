@@ -252,6 +252,7 @@ def validate(val_loader, model, classifier, criterion, opt):
     losses = AverageMeter()
     top1 = AverageMeter()
 
+    mean_per_class_acc = None
     if opt.dataset == 'flowers102':
         all_outputs = []
         all_labels = []
@@ -292,11 +293,12 @@ def validate(val_loader, model, classifier, criterion, opt):
     if opt.dataset == 'flowers102':
         mean_per_class_acc = mean_per_class_accuracy(torch.vstack(all_outputs), torch.hstack(all_labels), opt.n_cls)
         print(f' * Mean-Per-Class Acc {mean_per_class_acc}')
-    return losses.avg, top1.avg
+    return losses.avg, top1.avg, mean_per_class_acc
 
 
 def main():
     best_acc = 0
+    best_mean_per_class_acc = 0
     opt = parse_option()
 
     # build data loader
@@ -334,11 +336,13 @@ def main():
             epoch, time2 - time1, train_acc))
 
         # eval for one epoch
-        val_loss, val_acc = validate(val_loader, model, classifier, criterion, opt)
+        val_loss, val_acc, val_mean_per_class_acc = validate(val_loader, model, classifier, criterion, opt)
         if val_acc > best_acc:
             best_acc = val_acc
             save_file = os.path.join(opt.save_folder, 'best.pth'.format(epoch=epoch))
             save_model(model, optimizer, opt, epoch, save_file, scalar)
+        if val_mean_per_class_acc and val_mean_per_class_acc > best_mean_per_class_acc:
+            best_mean_per_class_acc = val_mean_per_class_acc
 
         # tensorboard logger
         logger.add_scalar('train_loss', train_loss, epoch)
