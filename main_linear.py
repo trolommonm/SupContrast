@@ -355,6 +355,8 @@ def main():
     save_model(model, optimizer, opt, epoch, save_file, scalar)
 
     print('best accuracy: {:.2f}'.format(best_acc))
+    if opt.dataset == 'flowers102':
+        print(f'best mean-per-class accuracy: {best_mean_per_class_acc}')
 
 
 if __name__ == '__main__':
