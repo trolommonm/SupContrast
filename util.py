@@ -51,7 +51,7 @@ def mean_per_class_accuracy(output, target, num_classes):
         for c in range(num_classes):
             acc[c] = ((preds == target) * (target == c)).float() / max((target == c).sum(), 1)
 
-        return np.mean(acc)
+        return torch.mean(acc)
 
 
 def adjust_learning_rate(args, optimizer, epoch):
