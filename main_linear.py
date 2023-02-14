@@ -55,7 +55,8 @@ def parse_option():
     # model dataset
     parser.add_argument('--model', type=str, default='resnet50')
     parser.add_argument('--dataset', type=str, default='cifar10',
-                        choices=['cifar10', 'cifar100', 'dtd', 'svhn', 'kaokore', 'flowers102'], help='dataset')
+                        choices=['cifar10', 'cifar100', 'dtd', 'svhn', 'kaokore', 'flowers102', 'aircraft'],
+                        help='dataset')
     parser.add_argument('--size', type=int, default=32, help='parameter for RandomResizedCrop/Resize')
 
     # augmentation
@@ -127,6 +128,8 @@ def parse_option():
         opt.n_cls = 8
     elif opt.dataset == 'flowers102':
         opt.n_cls = 102
+    elif opt.dataset == 'aircraft':
+        opt.n_cls = 100
     else:
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
 
@@ -290,7 +293,7 @@ def validate(val_loader, model, classifier, criterion, opt):
                     loss=losses, top1=top1))
 
     print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
-    if opt.dataset == 'flowers102':
+    if opt.dataset in ['flowers102', 'aircraft']:
         mean_per_class_acc = mean_per_class_accuracy(torch.vstack(all_outputs), torch.hstack(all_labels), opt.n_cls)
         print(f' * Mean-Per-Class Acc {mean_per_class_acc}')
     return losses.avg, top1.avg, mean_per_class_acc
@@ -355,7 +358,7 @@ def main():
     save_model(model, optimizer, opt, epoch, save_file, scalar)
 
     print('best accuracy: {:.2f}'.format(best_acc))
-    if opt.dataset == 'flowers102':
+    if opt.dataset in ['flowers102', 'aircraft']:
         print(f'best mean-per-class accuracy: {best_mean_per_class_acc}')
 
 
