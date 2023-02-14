@@ -19,6 +19,8 @@ from util import set_optimizer, save_model
 from networks.resnet_big import SupConResNet, SupCEResNet, LinearClassifier
 from data_loader import set_loader
 
+MEAN_PER_CLASS_DATASETS = ['flowers102', 'aircraft']
+
 try:
     import apex
     from apex import amp, optimizers
@@ -271,7 +273,7 @@ def validate(val_loader, model, classifier, criterion, opt):
             output = classifier(model.encoder(images))
             loss = criterion(output, labels)
 
-            if opt.dataset == 'flowers102':
+            if opt.dataset in MEAN_PER_CLASS_DATASETS:
                 all_outputs.append(output)
                 all_labels.append(labels)
 
@@ -293,7 +295,7 @@ def validate(val_loader, model, classifier, criterion, opt):
                     loss=losses, top1=top1))
 
     print(' * Acc@1 {top1.avg:.3f}'.format(top1=top1))
-    if opt.dataset in ['flowers102', 'aircraft']:
+    if opt.dataset in MEAN_PER_CLASS_DATASETS:
         mean_per_class_acc = mean_per_class_accuracy(torch.vstack(all_outputs), torch.hstack(all_labels), opt.n_cls)
         print(f' * Mean-Per-Class Acc {mean_per_class_acc}')
     return losses.avg, top1.avg, mean_per_class_acc
