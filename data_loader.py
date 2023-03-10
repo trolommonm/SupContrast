@@ -5,7 +5,18 @@ from dommainnet_dataset import DomainNetDataset
 from kaokore_dataset import Kaokore
 
 
-def set_loader(opt, method):
+ds_to_ncls = {
+    "cifar10": 10,
+    "cifar100": 100,
+    "dtd": 47,
+    "svhn": 10,
+    "kaokore": 8,
+    "flowers102": 102,
+    "aircraft": 100
+}
+
+
+def set_loader(opt, method, validation=False):
     assert method == "supcon" or method == "ce" or method == "linear", "Invalid method!"
 
     train_transform, val_transform = get_augmentations(opt)
@@ -68,13 +79,19 @@ def set_loader(opt, method):
                                             split="train",
                                             transform=train_transform,
                                             download=True)
-        val_dataset = datasets.Flowers102(root=opt.data_folder,
-                                          split="val",
-                                          transform=train_transform,
-                                          download=True)
-        train_dataset = torch.utils.data.ConcatDataset([train_dataset, val_dataset])
+        if validation:
+            val_dataset = datasets.Flowers102(root=opt.data_folder,
+                                              split="val",
+                                              transform=val_transform,
+                                              download=True)
+        else:
+            train_dataset2 = datasets.Flowers102(root=opt.data_folder,
+                                              split="val",
+                                              transform=train_transform,
+                                              download=True)
+            train_dataset = torch.utils.data.ConcatDataset([train_dataset, train_dataset2])
 
-        val_dataset = datasets.Flowers102(root=opt.data_folder,
+            val_dataset = datasets.Flowers102(root=opt.data_folder,
                                           split="test",
                                           transform=val_transform,
                                           download=True)
