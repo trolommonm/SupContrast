@@ -30,14 +30,14 @@ def main(opt):
             opt.learning_rate = lr
             opt.batch_size = bs
 
-            # set optimizer
-            optimizer = set_optimizer(opt, classifier)
-
             # build data loader
             train_loader, val_loader = set_loader(opt, "linear", validation=True)
 
             # build model and criterion
             model, classifier, criterion = set_model(opt)
+
+            # set optimizer
+            optimizer = set_optimizer(opt, classifier)
 
             # GradScalar for amp
             scalar = GradScaler(enabled=opt.amp)
