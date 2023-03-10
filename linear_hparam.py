@@ -20,6 +20,7 @@ def main(opt):
     opt.momentum = 0.9
     opt.weight_decay = 0
     opt.warm = False
+    opt.print_freq = 10
 
     epochs = 50
     learning_rates = [0.1, 0.01, 0.001]
