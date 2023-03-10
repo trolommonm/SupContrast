@@ -133,8 +133,7 @@ def get_augmentations(opt):
         ])
     elif opt.augmentation == "none":
         train_transform = transforms.Compose([
-            transforms.RandomResizedCrop(size=(opt.size, opt.size), scale=(0.2, 1.)),
-            transforms.RandomHorizontalFlip(),
+            transforms.Resize(size=(opt.size, opt.size)),
             ScaleTransform() if opt.dataset == "domainnet" else transforms.ToTensor(),
             # normalize
         ])
