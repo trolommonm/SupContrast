@@ -17,6 +17,8 @@ def main(opt):
     opt.data_folder = './datasets/'
     opt.n_cls = ds_to_ncls[opt.dataset]
     opt.augmentation = "none"
+    opt.momentum = 0.9
+    opt.weight_decay = 0
 
     epochs = 50
     learning_rates = [0.1, 0.01, 0.001]
