@@ -19,6 +19,7 @@ def main(opt):
     opt.augmentation = "none"
     opt.momentum = 0.9
     opt.weight_decay = 0
+    opt.warm = False
 
     epochs = 50
     learning_rates = [0.1, 0.01, 0.001]
