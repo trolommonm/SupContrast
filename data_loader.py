@@ -96,13 +96,23 @@ def set_loader(opt, method, validation=False):
                                           transform=val_transform,
                                           download=True)
     elif opt.dataset == "aircraft":
-        train_dataset = datasets.FGVCAircraft(root=opt.data_folder,
-                                              split="trainval",
-                                              transform=train_transform,
-                                              download=True)
-        val_dataset = datasets.FGVCAircraft(root=opt.data_folder,
-                                            split="test",
-                                            transform=val_transform,
+        if validation:
+            train_dataset = datasets.FGVCAircraft(root=opt.data_folder,
+                                                  split="train",
+                                                  transform=train_transform,
+                                                  download=True)
+            val_dataset = datasets.FGVCAircraft(root=opt.data_folder,
+                                                split="val",
+                                                transform=val_transform,
+                                                download=True)
+        else:
+            train_dataset = datasets.FGVCAircraft(root=opt.data_folder,
+                                                  split="trainval",
+                                                  transform=train_transform,
+                                                  download=True)
+            val_dataset = datasets.FGVCAircraft(root=opt.data_folder,
+                                                split="test",
+                                                transform=val_transform,
                                             download=True)
     else:
         raise ValueError(opt.dataset)
