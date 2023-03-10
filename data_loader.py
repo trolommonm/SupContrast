@@ -1,4 +1,5 @@
 import torch
+from torch.utils.data import random_split
 from torchvision import transforms, datasets
 from data_aug import ScaleTransform, GaussianBlur, TwoCropTransform
 from dommainnet_dataset import DomainNetDataset
@@ -27,53 +28,78 @@ def set_loader(opt, method, validation=False):
         train_dataset = datasets.CIFAR10(root=opt.data_folder,
                                          transform=train_transform,
                                          download=True)
-        val_dataset = datasets.CIFAR10(root=opt.data_folder,
-                                       train=False,
-                                       transform=val_transform)
+        if validation:
+            train_dataset, val_dataset = random_split(train_dataset, lengths=[0.3, 0.7],
+                                                      generator=torch.Generator().manual_seed(42))
+        else:
+            val_dataset = datasets.CIFAR10(root=opt.data_folder,
+                                           train=False,
+                                           transform=val_transform)
     elif opt.dataset == "cifar100":
         train_dataset = datasets.CIFAR100(root=opt.data_folder,
                                           transform=train_transform,
                                           download=True)
-        val_dataset = datasets.CIFAR100(root=opt.data_folder,
-                                        train=False,
-                                        transform=val_transform)
+        if validation:
+            train_dataset, val_dataset = random_split(train_dataset, lengths=[0.3, 0.7],
+                                                      generator=torch.Generator().manual_seed(42))
+        else:
+            val_dataset = datasets.CIFAR100(root=opt.data_folder,
+                                            train=False,
+                                            transform=val_transform)
     elif opt.dataset == "domainnet":
         train_dataset = DomainNetDataset(annotations_file="DomainNet/train_combined.txt", img_dir="DomainNet/combined/",
                                          transform=train_transform)
         val_dataset = DomainNetDataset(annotations_file="DomainNet/test_combined.txt", img_dir="DomainNet/combined/",
                                        transform=val_transform)
     elif opt.dataset == "dtd":
-        # merge the train and val to form the train set
-        train_dataset = datasets.DTD(root=opt.data_folder,
-                                     split="train",
-                                     transform=train_transform,
-                                     download=True)
-        val_dataset = datasets.DTD(root=opt.data_folder,
-                                   split="val",
-                                   transform=train_transform,
-                                   download=True)
-        train_dataset = torch.utils.data.ConcatDataset([train_dataset, val_dataset])
+        if validation:
+            train_dataset = datasets.DTD(root=opt.data_folder,
+                                         split="train",
+                                         transform=train_transform,
+                                         download=True)
+            val_dataset = datasets.DTD(root=opt.data_folder,
+                                       split="val",
+                                       transform=val_transform,
+                                       download=True)
+        else:
+            train_dataset = datasets.DTD(root=opt.data_folder,
+                                         split="train",
+                                         transform=train_transform,
+                                         download=True)
+            val_dataset = datasets.DTD(root=opt.data_folder,
+                                       split="val",
+                                       transform=train_transform,
+                                       download=True)
+            train_dataset = torch.utils.data.ConcatDataset([train_dataset, val_dataset])
 
-        val_dataset = datasets.DTD(root=opt.data_folder,
-                                   split="test",
-                                   transform=val_transform,
-                                   download=True)
+            val_dataset = datasets.DTD(root=opt.data_folder,
+                                       split="test",
+                                       transform=val_transform,
+                                       download=True)
     elif opt.dataset == "svhn":
         train_dataset = datasets.SVHN(root=opt.data_folder,
                                       split="train",
                                       transform=train_transform,
                                       download=True)
-        val_dataset = datasets.SVHN(root=opt.data_folder,
-                                    split="test",
-                                    transform=val_transform,
-                                    download=True)
+        if validation:
+            train_dataset, val_dataset = random_split(train_dataset, lengths=[0.3, 0.7],
+                                                      generator=torch.Generator().manual_seed(42))
+        else:
+            val_dataset = datasets.SVHN(root=opt.data_folder,
+                                        split="test",
+                                        transform=val_transform,
+                                        download=True)
     elif opt.dataset == "kaokore":
         train_dataset = Kaokore(root="kaokore_v1.1",
                                 split="train",
                                 transform=train_transform)
-        val_dataset = Kaokore(root="kaokore_v1.1",
-                              split="test",
-                              transform=val_transform)
+        if validation:
+            train_dataset, val_dataset = random_split(train_dataset, lengths=[0.3, 0.7],
+                                                      generator=torch.Generator().manual_seed(42))
+        else:
+            val_dataset = Kaokore(root="kaokore_v1.1",
+                                  split="test",
+                                  transform=val_transform)
     elif opt.dataset == "flowers102":
         train_dataset = datasets.Flowers102(root=opt.data_folder,
                                             split="train",
