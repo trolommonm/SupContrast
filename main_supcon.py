@@ -71,7 +71,7 @@ def parse_option():
 
     # augmentation
     parser.add_argument('--augmentation', type=str, default='simaugment',
-                        choices=['autoaugment', 'randaugment', 'simaugment'], help='choose augmentation')
+                        choices=['autoaugment', 'randaugment', 'simaugment', 'stacked_randaugment'], help='choose augmentation')
     parser.add_argument('--autoaugment_policy', required=False,
                         choices=['IMAGENET', 'CIFAR10', 'SVHN'])
 

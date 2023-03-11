@@ -5,7 +5,6 @@ from data_aug import ScaleTransform, GaussianBlur, TwoCropTransform
 from dommainnet_dataset import DomainNetDataset
 from kaokore_dataset import Kaokore
 
-
 ds_to_ncls = {
     "cifar10": 10,
     "cifar100": 100,
@@ -112,15 +111,15 @@ def set_loader(opt, method, validation=False):
                                               download=True)
         else:
             train_dataset2 = datasets.Flowers102(root=opt.data_folder,
-                                              split="val",
-                                              transform=train_transform,
-                                              download=True)
+                                                 split="val",
+                                                 transform=train_transform,
+                                                 download=True)
             train_dataset = torch.utils.data.ConcatDataset([train_dataset, train_dataset2])
 
             val_dataset = datasets.Flowers102(root=opt.data_folder,
-                                          split="test",
-                                          transform=val_transform,
-                                          download=True)
+                                              split="test",
+                                              transform=val_transform,
+                                              download=True)
     elif opt.dataset == "aircraft":
         if validation:
             train_dataset = datasets.FGVCAircraft(root=opt.data_folder,
@@ -139,7 +138,7 @@ def set_loader(opt, method, validation=False):
             val_dataset = datasets.FGVCAircraft(root=opt.data_folder,
                                                 split="test",
                                                 transform=val_transform,
-                                            download=True)
+                                                download=True)
     else:
         raise ValueError(opt.dataset)
 
@@ -176,6 +175,20 @@ def get_augmentations(opt):
         train_transform = transforms.Compose([
             transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.)),
             transforms.RandomHorizontalFlip(),
+            transforms.RandomApply([
+                transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)
+            ]),
+            transforms.RandomGrayscale(p=0.2),
+            GaussianBlur(kernel_size=int(0.1 * opt.size)),
+            ScaleTransform() if opt.dataset == "domainnet" else transforms.ToTensor(),
+            # normalize
+        ])
+    elif opt.augmentation == "stacked_randaugment":
+        # Stacked RandAugment
+        train_transform = transforms.Compose([
+            transforms.RandomResizedCrop(size=opt.size, scale=(0.2, 1.)),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandAugment(),
             transforms.RandomApply([
                 transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)
             ]),
