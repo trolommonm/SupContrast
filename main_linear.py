@@ -25,7 +25,7 @@ try:
 except ImportError:
     pass
 
-MEAN_PER_CLASS_DATASETS = ['flowers102', 'aircraft']
+MEAN_PER_CLASS_DATASETS = ['flowers102', 'aircraft', 'pets']
 
 
 def check_mean_per_class_ds(opt):
