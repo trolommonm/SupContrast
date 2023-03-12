@@ -17,7 +17,7 @@ from util import AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate, accuracy, mean_per_class_accuracy
 from util import set_optimizer, save_model
 from networks.resnet_big import SupConResNet, SupCEResNet, LinearClassifier
-from data_loader import set_loader
+from data_loader import set_loader, ds_to_ncls
 
 try:
     import apex
@@ -122,20 +122,8 @@ def parse_option():
         else:
             opt.warmup_to = opt.learning_rate
 
-    if opt.dataset == 'cifar10':
-        opt.n_cls = 10
-    elif opt.dataset == 'cifar100':
-        opt.n_cls = 100
-    elif opt.dataset == 'dtd':
-        opt.n_cls = 47
-    elif opt.dataset == 'svhn':
-        opt.n_cls = 10
-    elif opt.dataset == 'kaokore':
-        opt.n_cls = 8
-    elif opt.dataset == 'flowers102':
-        opt.n_cls = 102
-    elif opt.dataset == 'aircraft':
-        opt.n_cls = 100
+    if ds_to_ncls.get(opt.dataset):
+        opt.n_cls = ds_to_ncls[opt.dataset]
     else:
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
 
