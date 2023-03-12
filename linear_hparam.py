@@ -76,7 +76,7 @@ def main(opt):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='cifar10',
-                        choices=['cifar10', 'cifar100', 'dtd', 'svhn', 'kaokore', 'flowers102', 'aircraft'],
+                        choices=['cifar10', 'cifar100', 'dtd', 'svhn', 'kaokore', 'flowers102', 'aircraft', 'pets'],
                         help='dataset')
     parser.add_argument('--size', type=int, default=32, help='parameter for RandomResizedCrop/Resize')
 
