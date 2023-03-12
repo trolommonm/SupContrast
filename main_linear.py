@@ -88,6 +88,10 @@ def parse_option():
                         help='id for recording multiple runs')
     parser.add_argument('--subtrial', type=str, default='0',
                         help='subtrial id for recording multiple runs of the same trial')
+    parser.add_argument('--save_best', default=False,
+                        help='whether to save the best model')
+    parser.add_argument('--save_last', default=False,
+                        help='whether to save the model after the last epoch')
 
     opt = parser.parse_args()
 
@@ -336,8 +340,9 @@ def main():
         val_loss, val_acc, val_mean_per_class_acc = validate(val_loader, model, classifier, criterion, opt)
         if val_acc > best_acc:
             best_acc = val_acc
-            save_file = os.path.join(opt.save_folder, 'best.pth'.format(epoch=epoch))
-            save_model(model, optimizer, opt, epoch, save_file, scalar)
+            if opt.save_best:
+                save_file = os.path.join(opt.save_folder, 'best.pth'.format(epoch=epoch))
+                save_model(model, optimizer, opt, epoch, save_file, scalar)
         if val_mean_per_class_acc and val_mean_per_class_acc > best_mean_per_class_acc:
             best_mean_per_class_acc = val_mean_per_class_acc
 
@@ -348,8 +353,9 @@ def main():
         logger.add_scalar('val_accuracy', val_acc, epoch)
         logger.add_scalar('learning_rate', optimizer.param_groups[0]['lr'], epoch)
 
-    save_file = os.path.join(opt.save_folder, 'last.pth')
-    save_model(model, optimizer, opt, epoch, save_file, scalar)
+    if opt.save_last:
+        save_file = os.path.join(opt.save_folder, 'last.pth')
+        save_model(model, optimizer, opt, epoch, save_file, scalar)
 
     print('best accuracy: {:.2f}'.format(best_acc))
     if check_mean_per_class_ds(opt):
