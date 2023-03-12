@@ -12,7 +12,8 @@ ds_to_ncls = {
     "svhn": 10,
     "kaokore": 8,
     "flowers102": 102,
-    "aircraft": 100
+    "aircraft": 100,
+    "pets": 37
 }
 
 
@@ -28,7 +29,7 @@ def set_loader(opt, method, validation=False):
                                          transform=train_transform,
                                          download=True)
         if validation:
-            train_dataset, val_dataset = random_split(train_dataset, lengths=[0.3, 0.7],
+            train_dataset, val_dataset = random_split(train_dataset, lengths=[0.7, 0.3],
                                                       generator=torch.Generator().manual_seed(42))
         else:
             val_dataset = datasets.CIFAR10(root=opt.data_folder,
@@ -39,7 +40,7 @@ def set_loader(opt, method, validation=False):
                                           transform=train_transform,
                                           download=True)
         if validation:
-            train_dataset, val_dataset = random_split(train_dataset, lengths=[0.3, 0.7],
+            train_dataset, val_dataset = random_split(train_dataset, lengths=[0.7, 0.3],
                                                       generator=torch.Generator().manual_seed(42))
         else:
             val_dataset = datasets.CIFAR100(root=opt.data_folder,
@@ -81,7 +82,7 @@ def set_loader(opt, method, validation=False):
                                       transform=train_transform,
                                       download=True)
         if validation:
-            train_dataset, val_dataset = random_split(train_dataset, lengths=[0.3, 0.7],
+            train_dataset, val_dataset = random_split(train_dataset, lengths=[0.7, 0.3],
                                                       generator=torch.Generator().manual_seed(42))
         else:
             val_dataset = datasets.SVHN(root=opt.data_folder,
@@ -93,7 +94,7 @@ def set_loader(opt, method, validation=False):
                                 split="train",
                                 transform=train_transform)
         if validation:
-            train_dataset, val_dataset = random_split(train_dataset, lengths=[0.3, 0.7],
+            train_dataset, val_dataset = random_split(train_dataset, lengths=[0.7, 0.3],
                                                       generator=torch.Generator().manual_seed(42))
         else:
             val_dataset = Kaokore(root="kaokore_v1.1",
@@ -139,6 +140,23 @@ def set_loader(opt, method, validation=False):
                                                 split="test",
                                                 transform=val_transform,
                                                 download=True)
+    elif opt.dataset == "pets":
+        if validation:
+            train_dataset = datasets.OxfordIIITPet(root=opt.data_folder,
+                                                   split="trainval",
+                                                   transform=train_transform,
+                                                   download=True)
+            train_dataset, val_dataset = random_split(train_dataset, lengths=[0.7, 0.3],
+                                                      generator=torch.Generator().manual_seed(42))
+        else:
+            train_dataset = datasets.OxfordIIITPet(root=opt.data_folder,
+                                                   split="trainval",
+                                                   transform=train_transform,
+                                                   download=True)
+            val_dataset = datasets.OxfordIIITPet(root=opt.data_folder,
+                                                 split="test",
+                                                 transform=val_transform,
+                                                 download=True)
     else:
         raise ValueError(opt.dataset)
 
@@ -148,7 +166,7 @@ def set_loader(opt, method, validation=False):
         num_workers=opt.num_workers, pin_memory=True, sampler=train_sampler)
     val_loader = torch.utils.data.DataLoader(
         val_dataset, batch_size=256, shuffle=False,
-        num_workers=8, pin_memory=True)
+        num_workers=opt.num_workers, pin_memory=True)
 
     return train_loader, val_loader
 
