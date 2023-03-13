@@ -92,6 +92,8 @@ def parse_option():
                         help='whether to save the best model')
     parser.add_argument('--save_last', default=False,
                         help='whether to save the model after the last epoch')
+    parser.add_argument('--use_data_parallel', default=True,
+                        help='whether to use data parallel if multiple gpus are available')
 
     opt = parser.parse_args()
 
@@ -167,7 +169,7 @@ def set_model(opt):
     state_dict = ckpt['model']
 
     if torch.cuda.is_available():
-        if torch.cuda.device_count() > 1:
+        if torch.cuda.device_count() > 1 and opt.use_data_parallel:
             model.encoder = torch.nn.DataParallel(model.encoder)
         else:
             new_state_dict = {}
