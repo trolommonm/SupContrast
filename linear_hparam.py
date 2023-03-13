@@ -92,6 +92,8 @@ if __name__ == "__main__":
                         help='number of workers for the data loader')
     parser.add_argument('--amp', action='store_true',
                         help='enable automatic mixed precision training')
+    parser.add_argument('--no_data_parallel', action='store_true',
+                        help='dont use data parallel if multiple gpus are available')
 
     opt = parser.parse_args()
 
