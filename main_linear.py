@@ -92,7 +92,7 @@ def parse_option():
                         help='whether to save the best model')
     parser.add_argument('--save_last', default=False,
                         help='whether to save the model after the last epoch')
-    parser.add_argument('--no_data_parallel', default='store_true',
+    parser.add_argument('--no_data_parallel', action='store_true',
                         help='dont use data parallel if multiple gpus are available')
 
     opt = parser.parse_args()
