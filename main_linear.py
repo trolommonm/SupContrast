@@ -347,8 +347,12 @@ def main():
         train_loss, train_acc, train_mean_per_class_acc = train(train_loader, model, classifier, criterion,
                                                                 optimizer, epoch, opt, scalar)
         time2 = time.time()
-        print('Train epoch {}, total time {:.2f}, accuracy:{:.2f}, mean per class acc:{:.2f}'.format(
-            epoch, time2 - time1, train_acc, train_mean_per_class_acc))
+        output = 'Train epoch {}, total time {:.2f}, accuracy: {:.2f}'.format(epoch, time2 - time1, train_acc)
+        if train_mean_per_class_acc:
+            output += f', mean per class acc: {train_mean_per_class_acc:.2f}'
+        print(output)
+        # print('Train epoch {}, total time {:.2f}, accuracy:{:.2f}'.format(
+        #     epoch, time2 - time1, train_acc))
 
         # eval for one epoch
         val_loss, val_acc, val_mean_per_class_acc = validate(val_loader, model, classifier, criterion, opt)
