@@ -50,7 +50,7 @@ def main(opt):
             tmp_opt_bs = None
             tmp_highest_val_acc = float('-inf')
             for epoch in range(epochs):
-                _, _ = train(train_loader, model, classifier, criterion, optimizer, epoch, opt, scalar)
+                _, _, _ = train(train_loader, model, classifier, criterion, optimizer, epoch, opt, scalar)
 
                 _, val_acc, val_mean_per_class_acc = validate(val_loader, model, classifier, criterion, opt)
                 if val_mean_per_class_acc:
