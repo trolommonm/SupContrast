@@ -178,7 +178,6 @@ def get_augmentations(opt):
             transforms.Resize(size=(opt.size, opt.size)),
             transforms.AutoAugment(transforms.AutoAugmentPolicy[opt.autoaugment_policy]),
             ScaleTransform() if opt.dataset == "domainnet" else transforms.ToTensor(),
-            # normalize
         ])
     elif opt.augmentation == "randaugment":
         # RandAugment
@@ -186,7 +185,6 @@ def get_augmentations(opt):
             transforms.Resize(size=(opt.size, opt.size)),
             transforms.RandAugment(),
             ScaleTransform() if opt.dataset == "domainnet" else transforms.ToTensor(),
-            # normalize
         ])
     elif opt.augmentation == "simaugment":
         # SimAugment
@@ -199,7 +197,6 @@ def get_augmentations(opt):
             transforms.RandomGrayscale(p=0.2),
             GaussianBlur(kernel_size=int(0.1 * opt.size)),
             ScaleTransform() if opt.dataset == "domainnet" else transforms.ToTensor(),
-            # normalize
         ])
     elif opt.augmentation == "stacked_randaugment":
         # Stacked RandAugment
@@ -213,13 +210,11 @@ def get_augmentations(opt):
             transforms.RandomGrayscale(p=0.2),
             GaussianBlur(kernel_size=int(0.1 * opt.size)),
             ScaleTransform() if opt.dataset == "domainnet" else transforms.ToTensor(),
-            # normalize
         ])
     elif opt.augmentation == "none":
         train_transform = transforms.Compose([
             transforms.Resize(size=(opt.size, opt.size)),
             ScaleTransform() if opt.dataset == "domainnet" else transforms.ToTensor(),
-            # normalize
         ])
     else:
         raise ValueError("This should not happen; check the augmentation argument!")
@@ -227,7 +222,6 @@ def get_augmentations(opt):
     val_transform = transforms.Compose([
         transforms.Resize(size=(opt.size, opt.size)),
         ScaleTransform() if opt.dataset == "domainnet" else transforms.ToTensor(),
-        # normalize,
     ])
 
     return train_transform, val_transform

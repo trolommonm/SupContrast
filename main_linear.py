@@ -197,6 +197,11 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, opt, sca
     losses = AverageMeter()
     top1 = AverageMeter()
 
+    mean_per_class_acc = None
+    if check_mean_per_class_ds(opt):
+        all_outputs = []
+        all_labels = []
+
     end = time.time()
     for idx, (images, labels) in enumerate(train_loader):
         data_time.update(time.time() - end)
@@ -216,6 +221,10 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, opt, sca
         with autocast(enabled=opt.amp):
             output = classifier(features.detach())
             loss = criterion(output, labels)
+
+        if check_mean_per_class_ds(opt):
+            all_outputs.append(output)
+            all_labels.append(labels)
 
         # update metric
         losses.update(loss.item(), bsz)
@@ -243,7 +252,10 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, opt, sca
                 data_time=data_time, loss=losses, top1=top1))
             sys.stdout.flush()
 
-    return losses.avg, top1.avg
+    if check_mean_per_class_ds(opt):
+        mean_per_class_acc = mean_per_class_accuracy(torch.vstack(all_outputs), torch.hstack(all_labels), opt.n_cls)
+
+    return losses.avg, top1.avg, mean_per_class_acc
 
 
 def validate(val_loader, model, classifier, criterion, opt):
@@ -332,11 +344,11 @@ def main():
 
         # train for one epoch
         time1 = time.time()
-        train_loss, train_acc = train(train_loader, model, classifier, criterion,
-                                      optimizer, epoch, opt, scalar)
+        train_loss, train_acc, train_mean_per_class_acc = train(train_loader, model, classifier, criterion,
+                                                                optimizer, epoch, opt, scalar)
         time2 = time.time()
-        print('Train epoch {}, total time {:.2f}, accuracy:{:.2f}'.format(
-            epoch, time2 - time1, train_acc))
+        print('Train epoch {}, total time {:.2f}, accuracy:{:.2f}, mean per class acc:{:.2f}'.format(
+            epoch, time2 - time1, train_acc, train_mean_per_class_acc))
 
         # eval for one epoch
         val_loss, val_acc, val_mean_per_class_acc = validate(val_loader, model, classifier, criterion, opt)
@@ -354,6 +366,9 @@ def main():
         logger.add_scalar('val_loss', val_loss, epoch)
         logger.add_scalar('val_accuracy', val_acc, epoch)
         logger.add_scalar('learning_rate', optimizer.param_groups[0]['lr'], epoch)
+        if train_mean_per_class_acc or val_mean_per_class_acc:
+            logger.add_scalar('train_mean_per_class_accuracy', train_mean_per_class_acc, epoch)
+            logger.add_scalar('val_mean_per_class_accuracy', val_mean_per_class_acc, epoch)
 
     if opt.save_last:
         save_file = os.path.join(opt.save_folder, 'last.pth')
