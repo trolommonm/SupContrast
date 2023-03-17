@@ -16,7 +16,7 @@ except ImportError:
 def main(opt):
     opt.data_folder = './datasets/'
     opt.n_cls = ds_to_ncls[opt.dataset]
-    opt.augmentation = "none"
+    opt.augmentation = "finetune" if opt.fine_tune else "none"
     opt.momentum = 0.9
     opt.weight_decay = 0
     opt.warm = False

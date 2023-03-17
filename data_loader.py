@@ -216,6 +216,12 @@ def get_augmentations(opt):
             transforms.Resize(size=(opt.size, opt.size)),
             ScaleTransform() if opt.dataset == "domainnet" else transforms.ToTensor(),
         ])
+    elif opt.augmentation == "finetune":
+        train_transform = transforms.Compose([
+            transforms.RandomResizedCrop(size=(opt.size, opt.size)),
+            transforms.RandomHorizontalFlip(),
+            ScaleTransform() if opt.dataset == "domainnet" else transforms.ToTensor(),
+        ])
     else:
         raise ValueError("This should not happen; check the augmentation argument!")
 
