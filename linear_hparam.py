@@ -42,7 +42,8 @@ def main(opt):
 
             # set optimizer
             if opt.fine_tune:
-                optimizer = set_optimizer_params(opt, [model.parameters(), classifier.parameters()])
+                params = list(model.parameters()) + list(classifier.parameters())
+                optimizer = set_optimizer_params(opt, params)
             else:
                 optimizer = set_optimizer(opt, classifier)
 
