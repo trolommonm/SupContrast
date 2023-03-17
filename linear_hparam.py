@@ -94,6 +94,8 @@ if __name__ == "__main__":
                         help='enable automatic mixed precision training')
     parser.add_argument('--no_data_parallel', action='store_true',
                         help='dont use data parallel if multiple gpus are available')
+    parser.add_argument('--fine_tune', action='store_true',
+                        help='whether to fine-tune or perform fixed feature evaluation')
 
     opt = parser.parse_args()
 

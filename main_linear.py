@@ -94,6 +94,8 @@ def parse_option():
                         help='whether to save the model after the last epoch')
     parser.add_argument('--no_data_parallel', action='store_true',
                         help='dont use data parallel if multiple gpus are available')
+    parser.add_argument('--fine_tune', action='store_true',
+                        help='whether to fine-tune or perform fixed feature evaluation')
 
     opt = parser.parse_args()
 
@@ -216,10 +218,14 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, opt, sca
 
         # compute loss
         with autocast(enabled=opt.amp):
-            with torch.no_grad():
-                features = model.encoder(images)
+            # with torch.no_grad():
+            #     features = model.encoder(images)
+            features = model.encoder(images)
         with autocast(enabled=opt.amp):
-            output = classifier(features.detach())
+            if opt.fine_tune:
+                output = classifier(features)
+            else:
+                output = classifier(features.detach())
             loss = criterion(output, labels)
 
         if check_mean_per_class_ds(opt):
