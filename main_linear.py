@@ -51,7 +51,7 @@ def parse_option():
                         help='learning rate')
     parser.add_argument('--lr_decay_epochs', type=str, default='60,75,90',
                         help='where to decay lr, can be a list')
-    parser.add_argument('--lr_decay_rate', type=float, default=0.2,
+    parser.add_argument('--lr_decay_rate', type=float, default=0.1,
                         help='decay rate for learning rate')
     parser.add_argument('--weight_decay', type=float, default=0,
                         help='weight decay')
@@ -191,10 +191,7 @@ def set_model(opt):
 
 def train(train_loader, model, classifier, criterion, optimizer, epoch, opt, scalar):
     """one epoch training"""
-    if opt.fine_tune:
-        model.train()
-    else:
-        model.eval()
+    model.eval()
     classifier.train()
 
     batch_time = AverageMeter()

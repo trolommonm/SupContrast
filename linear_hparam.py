@@ -23,7 +23,7 @@ def main(opt):
     opt.print_freq = 10
 
     epochs = 50
-    learning_rates = [0.1, 0.01, 0.001]
+    learning_rates = [0.01, 0.001, 0.1]
     batch_sizes = [32, 64, 128]
 
     opt_lr = None
@@ -91,6 +91,10 @@ if __name__ == "__main__":
                         help='method used for pre-trained model')
     parser.add_argument('--num_classes', type=int,
                         help='number of classes used for pre-trained model if method is CE')
+    parser.add_argument('--lr_decay_rate', type=float, default=0.1,
+                        help='decay rate for learning rate')
+    parser.add_argument('--lr_decay_epochs', type=str, default='60,75,90',
+                        help='where to decay lr, can be a list')
 
     parser.add_argument('--num_workers', type=int, default=16,
                         help='number of workers for the data loader')
