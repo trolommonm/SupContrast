@@ -92,6 +92,18 @@ def set_optimizer(opt, model, ckpt=None):
     return optimizer
 
 
+def set_optimizer_params(opt, params, ckpt=None):
+    optimizer = optim.SGD(params,
+                          lr=opt.learning_rate,
+                          momentum=opt.momentum,
+                          weight_decay=opt.weight_decay)
+
+    if ckpt:
+        optimizer.load_state_dict(ckpt['optimizer'])
+
+    return optimizer
+
+
 def set_gradscalar(opt, ckpt=None):
     scalar = GradScaler(opt.amp)
 

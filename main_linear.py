@@ -15,7 +15,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from util import AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate, accuracy, mean_per_class_accuracy
-from util import set_optimizer, save_model
+from util import set_optimizer, save_model, set_optimizer_params
 from networks.resnet_big import SupConResNet, SupCEResNet, LinearClassifier
 from data_loader import set_loader, ds_to_ncls
 
@@ -191,7 +191,10 @@ def set_model(opt):
 
 def train(train_loader, model, classifier, criterion, optimizer, epoch, opt, scalar):
     """one epoch training"""
-    model.eval()
+    if opt.fine_tune:
+        model.train()
+    else:
+        model.eval()
     classifier.train()
 
     batch_time = AverageMeter()
@@ -336,7 +339,10 @@ def main():
     print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
     # build optimizer
-    optimizer = set_optimizer(opt, classifier)
+    if opt.fine_tune:
+        optimizer = set_optimizer_params(opt, [model.parameters(), classifier.parameters()])
+    else:
+        optimizer = set_optimizer(opt, classifier)
 
     # GradScalar for amp
     scalar = GradScaler(enabled=opt.amp)

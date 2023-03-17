@@ -2,7 +2,7 @@ import argparse
 
 from main_linear import train, validate, set_model
 from data_loader import set_loader, ds_to_ncls
-from util import set_optimizer
+from util import set_optimizer, set_optimizer_params
 
 from torch.cuda.amp import GradScaler
 
@@ -41,7 +41,10 @@ def main(opt):
             model, classifier, criterion = set_model(opt)
 
             # set optimizer
-            optimizer = set_optimizer(opt, classifier)
+            if opt.fine_tune:
+                optimizer = set_optimizer_params(opt, [model.parameters(), classifier.parameters()])
+            else:
+                optimizer = set_optimizer(opt, classifier)
 
             # GradScalar for amp
             scalar = GradScaler(enabled=opt.amp)
